@@ -13,7 +13,6 @@ Terminal 1: Start server
 >> sudo python melt_client.py start melt session_03,800,42 # Start a melt experiment label="session_03",rpm=800,temp=42 C
 >> sudo python melt_client.py exit # Stop the server
 
-
 '''
 # Imports
 
