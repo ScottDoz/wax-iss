@@ -1287,7 +1287,7 @@ def handle_client_connection(client_socket):
 			if not data:
 				break
 
-			#light commands
+			# Light commands
 			if data == "light_on":
 				light_turn_on(client_socket,data)
 				break
@@ -1301,7 +1301,7 @@ def handle_client_connection(client_socket):
 				light_set_brightness(client_socket, data)
 				break
 			
-			#Camera commands
+			# Camera commands
 			if data.startswith("start_camera"):
 				if len(data.split()) > 1:
 					output_file = data.split(" ", 1)[1]
@@ -1313,7 +1313,8 @@ def handle_client_connection(client_socket):
 			elif data.startswith("rotate_camera"):
 				rotate_camera(client_socket, data)
 				break
-			#thermocpuple commands
+				
+			# Thermocpuple commands
 			elif data == "spy":
 				show_data(client_socket)
 				break
@@ -1344,7 +1345,7 @@ def handle_client_connection(client_socket):
 				break
 			
 			
-			#cal 3300 commands
+			# CAL 3300 commands
 			elif data.startswith("set_setpoint"):
 				set_setpoint_socket(client_socket,data)
 				break
@@ -1352,7 +1353,8 @@ def handle_client_connection(client_socket):
 				get_temp_and_setpoint_socket(client_socket)
 				break
 			
-				#TODO: add other shutdown items here
+			# Exit commands
+			#TODO: add other shutdown items here
 			elif data == "exit":
 				
 				shutdown(client_socket)
@@ -1360,8 +1362,7 @@ def handle_client_connection(client_socket):
 				
 				break
 			
-			#start melt commend
-			
+			# Start melt commend
 			elif data.startswith("start melt"):
 				data_list = data[11:].split(",")
 				start_melt(client_socket, str.strip(data_list[0]),float(data_list[1]), float(data_list[2]))
@@ -1385,7 +1386,7 @@ def handle_client_connection(client_socket):
 				client_socket.sendall(b"Resuming rotation.\n")
 				break
 				
-			# start casting
+			# Start casting
 			elif data.startswith("start cast"):
 				data_list = data[11:].split(",")
 				if len(data_list) > 2:
