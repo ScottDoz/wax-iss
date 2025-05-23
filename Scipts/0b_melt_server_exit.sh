@@ -1,4 +1,4 @@
 #!/bin/bash
 
 echo "Exiting melt server"
-sudo python ~/Documents/wax/melt_client.py exit
+sudo python ~/wax-iss/wax/melt_client.py exit

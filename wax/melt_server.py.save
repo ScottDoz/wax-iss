@@ -1,0 +1,157 @@
+#from light_module import light_turn_on, light_set_color, light_turn_off, light_set_brightness
+import socket 
+import threading
+import sys
+import board
+import neopixel
+import time
+import busio
+import digitalio
+import getopt
+from datetime import datetime
+
+
+
+#light commands
+def light_turn_on(client_socket,data):
+	global is_on
+	if is_on:
+		client_socket.sendall(b"Lights already on.\n")
+		return
+	try:
+		is_on = True
+		pixels.fill(color)
+		pixels.show()
+		client_socket.sendall(b"Turning on lights.\n")
+	except Exception as e:
+		client_socket.sendall(f"Error in turning on: {str(e)}\n".encode('utf-8'))
+		
+		
+		
+def light_set_color(client_socket,data): #light set color
+	arg_color = data[11:]
+	color = [int(x) for x in arg_color.split(',')]
+	if len(color) != 3:
+		raise ValueError
+	try:
+		pixels.fill(color)
+		pixels.show()
+		client_socket.sendall(b"Setting color.\n")
+	except:
+		client_socket.sendall(f"Error in setting color: {str(e)}\n".encode('utf-8'))
+		
+		
+def light_turn_off(client_socket): 
+	global is_on
+	if not is_on:
+		client_socket.sendall(b"Lights already off.\n")
+		return
+	try:
+		pixels.fill((0,0,0))
+		pixels.show()
+		is_on=False
+		client_socket.sendall(b"Turning lights off\n")
+	except Exception as e:
+		client_socket.sendall(f"Error in turning off: {str(e)}\n".encode('utf-8'))
+		
+		
+def light_set_brightness(client_socket, data):
+	brightness = data[17:]
+	try:
+		pixels.brightness = float(brightness)
+		pixels.show()
+		client_socket.sendall(b"Setting brightness.\n")
+	except Exception as e:
+		client_socket.sendall(f"Error in setting brightness: {str(e)}\n".encode('utf-8'))
+		
+		
+
+
+def handle_client_connection(client_socket):
+	global color, brightness, is_on, is_running
+	
+	while True:
+		try:
+			data = client_socket.recv(1024).decode('utf-8').strip()
+			print(f"Recieved command: {data}")
+			
+			if not data:
+				break
+
+			#light commands
+			if data == "light_on":
+				light_turn_on(client_socket,data)
+				break
+			elif data.startswith("light_color"):
+				light_set_color(client_socket, data)
+				break
+			elif data == "light_off":
+				light_turn_off(client_socket)
+				break
+			elif data.startswith("light_brightness"):
+				light_set_brightness(client_socket, data)
+				break
+			#Camera commands
+			elif data.startswith("start"):
+                		if len(data.split()) > 1:
+                    			output_file = data.split(" ", 1)[1]
+                			start_recording(client_socket,data)
+
+            		elif data == "stop":
+                		stop_recording(client_socket)
+
+                	is_running = False  # Stop the main server loop
+            elif data.startswith("rotate"):
+                rotate_camera(client_socket, data)
+
+			elif data == "exit":
+				client_socket.sendall(b"Exiting Server.\n")
+				is_running = False
+				break
+			else:
+				client_socket.sendall(b"Invalid command.\n")
+		except Exception as e:
+			client_socket.sendall(f"Error: {str(e)}\n".encode('utf-8'))
+			break
+	client_socket.close()	
+
+
+
+def melt_server_program():
+	global pixels, is_running, pixel_pin, ORDER, num_pixels, brightness, color, is_on, is_running
+	pixel_pin = board.D18
+	ORDER = neopixel.GRBW
+	num_pixels = 24
+	brightness = 0.5
+	color = [0,0,255]
+	is_on = False
+	is_running = True
+	pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5,auto_write=False, pixel_order = ORDER)
+	host = "localhost"
+	port = 65433
+	
+	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	server_socket.bind((host,port))
+	server_socket.listen(5)
+	
+	print("Melting Server started. Waiting for connections...")
+	
+	while is_running:
+		try:
+			server_socket.settimeout(1.0)
+			try:
+				client_socket, address = server_socket.accept()
+				print(f"Connection established with {address}")
+				client_handler = threading.Thread(target=handle_client_connection, args = (client_socket,))
+				client_handler.start()
+			except socket.timeout:
+				continue
+		except KeyboardInterrupt:
+			print("\nServer shutting down (KeyboardInterrupt).")
+			is_running = False
+	print("Server stopped.")
+	server_socket.close()
+
+if __name__ == "__main__":
+	melt_server_program()

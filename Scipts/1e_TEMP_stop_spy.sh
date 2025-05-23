@@ -1,4 +1,4 @@
 #!/bin/bash
 
 echo "Spy temperature"
-sudo python ~/Documents/wax/melt_client.py stop spy
+sudo python ~/wax-iss/wax/melt_client.py stop spy
