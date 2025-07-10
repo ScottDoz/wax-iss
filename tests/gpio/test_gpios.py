@@ -21,8 +21,8 @@ check_pin(6)
 print("\nMotor ENC A: GPIO 26")
 check_pin(26)
 
-print("\nMotor ENC B: GPIO 27")
-check_pin(27)
+print("\nMotor ENC B: GPIO 25")
+check_pin(25)
 
 
 
