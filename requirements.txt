@@ -118,6 +118,7 @@ six==1.16.0
 skywriter==0.0.7
 sn3218==1.2.7
 soupsieve==2.2.1
+SoloPy==4.1.0
 spidev==3.5
 ssh-import-id==5.10
 sysv-ipc==1.1.0
