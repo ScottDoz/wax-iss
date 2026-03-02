@@ -1027,6 +1027,7 @@ def set_target_load_speed_client(client_socket, rpm_load):
 	return
 	
 def spy_motor_speed_data(client_socket):
+	''' Print motor speed data to screen '''
 	global stime,spy_motor_flag, timestep_motor, mySolo
 
 	if spy_motor_flag == True:
