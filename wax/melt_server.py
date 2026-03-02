@@ -1903,8 +1903,8 @@ def handle_client_connection(client_socket):
 				# Sequence of commands
 				set_thermocouple_timestep_client(client_socket, 0.1)
 				set_motor_timestep_client(client_socket, 0.1)
-				# Run data logs in separate theads
 				
+				# Run data logs in separate theads
 				t1 = threading.Thread(
 					target=start_log_thermocouple_client,
 					args=(client_socket,),
@@ -1916,11 +1916,13 @@ def handle_client_connection(client_socket):
 					args=(client_socket,),
 					daemon=True
 				)
+				
 				# Start the threads
 				t1.start()
 				t2.start()
 				
 				break
+				
 			elif data == "stop_log_data":
 				# Stop looging data
 				
@@ -1936,6 +1938,7 @@ def handle_client_connection(client_socket):
 					args=(client_socket,),
 					daemon=True
 				)
+				
 				# Start the threads
 				t1.start()
 				t2.start()
