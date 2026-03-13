@@ -327,7 +327,7 @@ def start_log_thermocouple_client(client_socket):
 	global thermocouple_recording, thermocouple_file_path,stime, timestep_thermocouple, thermocouple, thermocouple2, exper_file
 
 	try:
-		thermocouple_file_path = os.path.join(exper_folder, os.path.basename("templog.txt"))
+		thermocouple_file_path = os.path.join(exper_folder, os.path.basename("thermo_log.txt"))
 		file = open(thermocouple_file_path, "w")
 		thermocouple_recording = True
 		try:
@@ -354,7 +354,7 @@ def start_log_thermocouple():
 	global thermocouple_recording, thermocouple_file_path,stime, timestep_thermocouple, thermocouple, thermocouple2, exper_file
 
 	try:
-		thermocouple_file_path = os.path.join(exper_folder, os.path.basename("templog.txt"))
+		thermocouple_file_path = os.path.join(exper_folder, os.path.basename("thermo_log.txt"))
 		file = open(thermocouple_file_path, "w")
 		thermocouple_recording = True
 		print("Starting thermocouple log. Timestep = {}".format(timestep_thermocouple))
@@ -378,13 +378,13 @@ def stop_log_thermocouple(client_socket):
 	global thermocouple_recording,picam2
 	
 	if thermocouple_recording == False:
-		client_socket.sendall(b"Alread stopped log\n")
+		client_socket.sendall(b"Alread stopped thermo log\n")
 		return
 	try:
 		thermocouple_recording = False
-		client_socket.sendall(b"Stopping log")
+		client_socket.sendall(b"Stopping thermo log")
 	except Exception as e:
-		client_socket.sendall(f"Error in stopping log: {str(e)}\n".encode('utf-8'))
+		client_socket.sendall(f"Error in stopping thermo log: {str(e)}\n".encode('utf-8'))
 
 
 
@@ -394,7 +394,7 @@ def start_log_melt():
         global thermocouple_recording, thermocouple_file_path,stime, timestep_melt, thermocouple, thermocouple2, exper_file
 
         try:
-                thermocouple_file_path = os.path.join(exper_folder, os.path.basename("templog.txt"))
+                thermocouple_file_path = os.path.join(exper_folder, os.path.basename("thermo_log.txt"))
                 file = open(thermocouple_file_path, "w")
                 thermocouple_recording = True
                 while thermocouple_recording:
@@ -735,6 +735,55 @@ def set_setpoint_melt(client_socket, setpoint):
 	except Exception as e:
 		client_socket.sendall(f"Error in setting setpoint: {str(e)}\n".encode('utf-8'))
 
+def set_CAL_timestep_client(client_socket, dt):
+	global timestep_CAL
+	try:
+		#index = data.find(" ")
+		#new_timestep = data[index+1:]
+		timestep_CAL = float(dt)
+		client_socket.sendall(f"Updated timestep_CAL = {str(timestep_CAL)}".encode('utf-8'))
+	except Exception as e:
+		client_socket.sendall(f"Error in updating timestep: {str(e)}\n".encode('utf-8'))
+
+
+def start_log_CAL_client(client_socket):
+	''' Log CAL temperature controller ata to a txt file '''
+	global CAL_recording, CAL_file_path, stime, timestep_CAL, exper_file
+
+	try:
+		CAL_file_path = os.path.join(exper_folder, os.path.basename("CAL_log.txt"))
+		file = open(CAL_file_path, "w")
+		CAL_recording = True
+		try:
+			client_socket.sendall(f"Starting CAL log. Timestep = {timestep_CAL}".encode('utf-8'))
+		except:
+			pass
+		
+		# Time loop
+		while CAL_recording:
+			temp_cal, setpoint = get_temp_and_setpoint(sleep_time = 0.05) # Read data
+			t = (time.perf_counter()-stime)
+			file.write("Time {:.2f} s Temp: {:.2f} Setpoint: {:.2f}\n".format(t,temp_cal,setpoint))
+			file.flush()
+			time.sleep(timestep_CAL)
+		print("closed file")
+	except Exception as e:
+                client_socket.sendall(f"Error in starting log: {str(e)}\n".encode('utf-8'))
+	finally:
+		file.close()
+
+def stop_log_CAL(client_socket):
+	''' Stop logging CAL data to file '''
+	global CAL_recording, picam2
+	
+	if CAL_recording == False:
+		client_socket.sendall(b"Alread stopped CAL log\n")
+		return
+	try:
+		CAL_recording = False
+		client_socket.sendall(b"Stopping CAL log")
+	except Exception as e:
+		client_socket.sendall(f"Error in stopping CAL log: {str(e)}\n".encode('utf-8'))
 
 # ######################################################################		
 # Motor commands (SOLO)
@@ -1077,7 +1126,7 @@ def start_log_motor_client(client_socket):
 	global motor_recording, motor_file_path, stime, timestep_motor, exper_file
 
 	try:
-		motor_file_path = os.path.join(exper_folder, os.path.basename("motorlog.txt"))
+		motor_file_path = os.path.join(exper_folder, os.path.basename("motor_log.txt"))
 		file = open(motor_file_path, "w")
 		motor_recording = True
 		try:
@@ -1110,7 +1159,7 @@ def start_log_motor():
 	global motor_recording, motor_file_path, stime, timestep_motor, exper_file
 
 	try:
-		motor_file_path = os.path.join(exper_folder, os.path.basename("motorlog.txt"))
+		motor_file_path = os.path.join(exper_folder, os.path.basename("motor_log.txt"))
 		file = open(motor_file_path, "w")
 		motor_recording = True
 		print("Starting motor log. Timestep = {}".format(timestep_motor))
@@ -1139,13 +1188,13 @@ def stop_log_motor(client_socket):
 	global motor_recording
 	
 	if motor_recording == False:
-		client_socket.sendall(b"Alread stopped log\n")
+		client_socket.sendall(b"Alread stopped motor log\n")
 		return
 	try:
 		motor_recording = False
-		client_socket.sendall(b"Stopping motor log")
+		#client_socket.sendall(b"Stopping motor log")
 	except Exception as e:
-		client_socket.sendall(f"Error in stopping log: {str(e)}\n".encode('utf-8'))
+		client_socket.sendall(f"Error in stopping motor log: {str(e)}\n".encode('utf-8'))
 
 def set_motor_timestep_client(client_socket, dt):
 	global timestep_motor
@@ -1259,6 +1308,79 @@ def create_folder(client_socket, prefix, label,rpm_set,temp_setpoint):
 	return exper_folder
 
 
+# ######################################################################
+# LOGGING 
+# ######################################################################
+
+def start_log_data(client_socket):
+	''' Start logging of data to file. Thermometer, CAL, motor '''
+	
+	# Log data from components in separate threads
+	# 1. Thermocouple
+	# 2. Motor
+	# 3. CAL
+	
+	# Sequence of commands
+	set_thermocouple_timestep_client(client_socket, 0.1)
+	set_motor_timestep_client(client_socket, 0.1)
+	set_CAL_timestep_client(client_socket, 0.1)
+
+	
+	# Run data logs in separate theads
+	t1 = threading.Thread(
+		target=start_log_thermocouple_client,
+		args=(client_socket,),
+		daemon=True
+	)
+	
+	t2 = threading.Thread(
+		target=start_log_CAL_client,
+		args=(client_socket,),
+		daemon=True
+	)
+	
+	t3 = threading.Thread(
+		target=start_log_motor_client,
+		args=(client_socket,),
+		daemon=True
+	)
+	
+	# Start the threads
+	t1.start()
+	t2.start()
+	t3.start()
+	
+	
+	return 
+
+def stop_log_data(client_socket):
+	''' Stop logging data '''
+	
+	# Run commands in separate threads
+	t1 = threading.Thread(
+		target=stop_log_thermocouple,
+		args=(client_socket,),
+		daemon=True
+	)
+	
+	t2 = threading.Thread(
+		target=stop_log_CAL,
+		args=(client_socket,),
+		daemon=True
+	)
+	
+	t3 = threading.Thread(
+		target=stop_log_motor,
+		args=(client_socket,),
+		daemon=True
+	)
+	
+	# Start the threads
+	t1.start()
+	t2.start()
+	t3.start()
+	
+	return
 
 # ######################################################################		
 # Melt Experiments
@@ -1306,6 +1428,7 @@ def start_melt(client_socket, label, rpm_set, temp_setpoint):
 	thermocouple_recording = True
 	timestep_thermocouple = 1.
 	timestep_motor = 1.
+	timestep_CAL = 1.
 	
 	# Set up motor
 	# Make sure to run these before starting melt experiemnt
@@ -1393,7 +1516,7 @@ def start_melt(client_socket, label, rpm_set, temp_setpoint):
 		
 		
 def stop_melt_client(client_socket):
-	global melt_running, thermocouple_is_running,camera_is_running, light_is_running, cal3300_is_running, camera_is_recording
+	global melt_running, thermocouple_is_running, camera_is_running, light_is_running, CAL_is_running, camera_is_recording
 	try:
 		
 		#stop_camera()
@@ -1411,15 +1534,15 @@ def stop_melt_client(client_socket):
 			print("Error stopping camera")
 		light_is_running = False
 		thermocouple_is_running = False
-		cal3300_is_running = False	
+		CAL_is_running = False	
 		#print("DEBUG: stop_melt_client: end of stop_melt_client")
-		#print("DEBUG: melt_running, light_is_running, thermocouple_is_running, cal3300_is_running")
+		#print("DEBUG: melt_running, light_is_running, thermocouple_is_running, CAL_is_running")
 		#print(melt_running)
 	except Exception as e:
 		client_socket.sendall(f"Error in stopping melt: {str(e)}\n".encode('utf-8'))
 		
 def stop_melt():
-	global melt_running, thermocouple_is_running,camera_is_running, light_is_running, cal3300_is_running
+	global melt_running, thermocouple_is_running,camera_is_running, light_is_running, CAL_is_running
 	try:
 		try:
 			stop_camera()
@@ -1431,7 +1554,7 @@ def stop_melt():
 		stop_camera()
 		light_is_running = False
 		thermocouple_is_running = False
-		cal3300_is_running = False	
+		CAL_is_running = False	
 	except Exception as e:
 		pass
 		#client_socket.sendall(f"Error in stopping melt: {str(e)}\n".encode('utf-8'))
@@ -1500,6 +1623,7 @@ def start_cast(client_socket, label, rpm_set, temp_setpoint):
 	timestep_thermocouple = 1.
 	timestep_melt = 1.
 	timestep_motor = 1.
+	timestep_CAL = 1.
 	
 	
 	# Main time loop
@@ -1641,6 +1765,7 @@ def start_fluid_rotation(client_socket, label, rpm_profile, temp_setpoint):
 	motor_recording = True
 	timestep_thermocouple = 1.
 	timestep_motor = 1.
+	timestep_CAL = 1.
 	
 	
 	# Main time loop
@@ -1748,7 +1873,10 @@ def start_fluid_rotation(client_socket, label, rpm_profile, temp_setpoint):
 
 
 def shutdown(client_socket):
-	global thermocouple_recording, motor_recording, thermocouple_is_running,camera_is_running, is_running, light_is_running, cal3300_is_running,picam2
+	global thermocouple_recording, thermocouple_is_running, CAL_is_running
+	global motor_recording
+	global camera_is_running, is_running, light_is_running, picam2
+	
 	try:
 		#stop_camera()
 		#stop_motors()
@@ -1759,13 +1887,17 @@ def shutdown(client_socket):
 		is_running = False
 		light_is_running = False
 		thermocouple_is_running = False
-		cal3300_is_running = False	
+		CAL_is_running = False	
 	except Exception as e:
 		client_socket.sendall(f"Error in shutting down: {str(e)}\n".encode('utf-8'))
 		
 
 def handle_client_connection(client_socket):
-	global color, brightness, is_on, is_running, camera_is_running, picam2, thermocouple_is_running, thermocouple_recording, motor_recording, cal3300_is_running
+	global color, brightness, is_on, is_running
+	global camera_is_running, picam2
+	global thermocouple_is_running, thermocouple_recording 
+	global motor_recording
+	global CAL_recording, CAL_is_running
 	
 	while True:
 		try:
@@ -1843,6 +1975,12 @@ def handle_client_connection(client_socket):
 			elif data == "get_temp_and_setpoint":
 				get_temp_and_setpoint_socket(client_socket)
 				break
+			elif data == "start_log_CAL":
+				start_log_CAL_client(client_socket)
+				break
+			elif data == "stop_log_CAL":
+				stop_log_CAL(client_socket)
+				break
 			
 			
 			# Motor commands
@@ -1900,49 +2038,10 @@ def handle_client_connection(client_socket):
 				
 			# Logging commands
 			elif data == "start_log_data":
-				# Sequence of commands
-				set_thermocouple_timestep_client(client_socket, 0.1)
-				set_motor_timestep_client(client_socket, 0.1)
-				
-				# Run data logs in separate theads
-				t1 = threading.Thread(
-					target=start_log_thermocouple_client,
-					args=(client_socket,),
-					daemon=True
-				)
-				
-				t2 = threading.Thread(
-					target=start_log_motor_client,
-					args=(client_socket,),
-					daemon=True
-				)
-				
-				# Start the threads
-				t1.start()
-				t2.start()
-				
+				start_log_data(client_socket)
 				break
-				
 			elif data == "stop_log_data":
-				# Stop looging data
-				
-				# Run commands in separate threads
-				t1 = threading.Thread(
-					target=stop_log_thermocouple,
-					args=(client_socket,),
-					daemon=True
-				)
-				
-				t2 = threading.Thread(
-					target=stop_log_motor,
-					args=(client_socket,),
-					daemon=True
-				)
-				
-				# Start the threads
-				t1.start()
-				t2.start()
-				
+				stop_log_data(client_socket)
 				break
 			
 			
@@ -2016,9 +2115,11 @@ def handle_client_connection(client_socket):
 def melt_server_program():
 	global pixels, light_is_running, pixel_pin, ORDER, num_pixels, brightness, color, light_is_on, is_running 
 	global picam2, encoder, video_output_file, camera_is_recording,camera_is_running, rotation
-	global thermocouple_is_running, thermocouple_recording, thermocouple_file_path,motor_file_path,spy_temp,stime,timestep_thermocouple, timestep_melt, timestep_motor, thermocouple, thermocouple2
-	global motor_recording
-	global temp_read_frame, setpoint_read_frame, t0, temp_crc, ser, cal3300_is_running
+	global thermocouple_is_running, thermocouple_recording, thermocouple_file_path, timestep_thermocouple, thermocouple, thermocouple2
+	global CAL_recording, CAL_is_running, CAL_file_path, timestep_CAL
+	global motor_file_path, motor_recording, timestep_motor
+	global spy_temp, stime, timestep_melt  
+	global temp_read_frame, setpoint_read_frame, t0, temp_crc, ser
 	global mySolo # SOLO motor driver instance
 	global spy_motor_flag, gear_ratio, rpm_limit
 	
@@ -2071,14 +2172,17 @@ def melt_server_program():
 	timestep_thermocouple = 0.5
 	timestep_motor = 0.5
 	timestep_melt = 0.5
+	timestep_CAL = 0.5
 	
 	# Logic flags for running loops
 	thermocouple_is_running = True
 	thermocouple_recording = False
+	CAL_recording = False
 	motor_recording = False
 	spy_temp = False
-	thermocouple_file_path = "templog.txt"
-	motor_file_path = "motorlog.txt"
+	thermocouple_file_path = "thermo_log.txt"
+	motor_file_path = "motor_log.txt"
+	CAL_file_path = "CAL_log.txt"
 	
 
 	# Motor setup
@@ -2096,7 +2200,7 @@ def melt_server_program():
 	# Set the serial hexadecimal message to request temperature and setpoint data
 	temp_read_frame =     [0x01,0x03,0x00,0x1C,0x00,0x01,0x45,0xCC] #request frame for temperature
 	setpoint_read_frame = [0x01,0x03,0x00,0x7F,0x00,0x01,0xB5,0xD2] #request frame for setpoint temperature
-	cal3300_is_running = True
+	CAL_is_running = True
 
 	temp_crc = add_crc(bytes([0x01,0x03,0x00,0x1C,0x00,0x01]))
 	t0=time.time()
