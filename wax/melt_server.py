@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 import csv
 
-import pigpio
+#import pigpio
 import rotary_encoder
 
 import SoloPy as solo
