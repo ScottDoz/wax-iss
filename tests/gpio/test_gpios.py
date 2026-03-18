@@ -18,12 +18,6 @@ check_pin(5)
 print("\nRTD Sensors (box wall): GPIO 6")
 check_pin(6)
 
-print("\nMotor ENC A: GPIO 26")
-check_pin(26)
-
-print("\nMotor ENC B: GPIO 25")
-check_pin(25)
-
 print("\nLED: GPIO 18")
 check_pin(18)
 
