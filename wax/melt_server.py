@@ -825,7 +825,6 @@ def stop_log_CAL(client_socket):
 		client_socket.sendall(f"Error in stopping CAL log: {str(e)}\n".encode('utf-8'))
 
 
-
 # ######################################################################		
 # Motor commands (SOLO)
 # ######################################################################
@@ -936,6 +935,83 @@ def reset_solo_settings_client(client_socket):
 
 	return
 	
+def reset_solo_settings(): 
+	''' Configure solo with default settings '''
+	global mySolo, gear_ratio, rpm_limit
+	
+	try:
+		print("\nSOLO Motor Settings")
+	
+		# Fixed settings
+		numberOfPoles = 4 # Motor's Number of Poles
+		numberOfEncoderLines = 1024 # Motor's Number of Encoder Lines (PPR pre-quad)
+		mySolo.set_motor_type(solo.MotorType.BLDC_PMSM) # Motor type
+		mySolo.set_motor_poles_counts(4) # Motor's Number of Poles (4)
+		mySolo.set_incremental_encoder_lines(numberOfEncoderLines)
+		print("Motor type: ", mySolo.get_motor_type())
+		print("Motor poles count: ", mySolo.get_motor_poles_counts())
+		print("Incremental encoder lines: ", mySolo.get_incremental_encoder_lines())
+		
+		# Control mode
+		mySolo.set_feedback_control_mode(solo.FeedbackControlMode.ENCODERS) # Use Encoders for sensing
+		mySolo.set_control_mode(solo.ControlMode.SPEED_MODE) # Speed control mode
+		mySolo.set_command_mode(solo.CommandMode.DIGITAL)    # Digital mode
+		print("Command mode: ", mySolo.get_command_mode())
+		print("Control mode: ", mySolo.get_control_mode())
+		print("Control feedback mode: ", mySolo.get_feedback_control_mode())
+		
+		# PWM and Current limit
+		pwmFrequency = 80  # Desired Switching or PWM Frequency at Output (80 khz)
+		currentLimit = 3.5 # Current Limit of the Motor (3.5 Amps)
+		mySolo.set_output_pwm_frequency_khz(pwmFrequency)
+		mySolo.set_current_limit(currentLimit)
+		print("Output PWM Frequency (khz)", mySolo.get_output_pwm_frequency_khz())
+		print("Current limit (A)", mySolo.get_current_limit())
+		
+		# PID settings
+		speedControllerKp = 0.2219924 # Speed controller Kp
+		speedControllerKi = 0.0070648 # Speed controller Ki
+		mySolo.set_speed_controller_kp(speedControllerKp)
+		mySolo.set_speed_controller_ki(speedControllerKi)
+		print("Speed controller kp: ", mySolo.get_speed_controller_kp())
+		print("Speed controller ki: ", mySolo.get_speed_controller_ki())
+		
+		# Acceleration/Deceleration, Speed limit values
+		speedAccelValue = 5.0 # Speed acceleration value (rev/s/s)
+		speedDecelValue = 5.0 # Speed deceleration value (rev/s/s)
+		mySolo.set_speed_acceleration_value(speedAccelValue)
+		mySolo.set_speed_deceleration_value(speedDecelValue)
+		speedLimit = 700*24 # Speed limit (rpm)
+		mySolo.set_speed_limit(speedLimit)
+		print("Speed acceleration value", mySolo.get_speed_acceleration_value()) # Rev/s/s
+		print("Speed deceleration value", mySolo.get_speed_deceleration_value())
+		print("Speed limit", mySolo.get_speed_limit())
+		
+		# Motor direction
+		mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE) # CCW = +ve
+		print("Motor direction", mySolo.get_motor_direction())
+		
+		
+		# Other	
+		print("encoder_hall_ccw_offset", mySolo.get_encoder_hall_ccw_offset())
+		print("encoder_hall_cw_offset", mySolo.get_encoder_hall_cw_offset())
+		print("Board temperature (C)", mySolo.get_board_temperature())
+		print("Motor resistance (Ohm)", mySolo.get_motor_resistance())
+		print("Motor inductance (H)", mySolo.get_motor_inductance())
+		
+		print("Communication is working", mySolo.communication_is_working())
+		print("Motion profile mode", mySolo.get_motion_profile_mode())
+		
+		# Motor speed limit
+		rpm_limit = 200*gear_ratio # Maximum allowed speed (motor)
+		print("Motor speed limit (RPM)", rpm_limit)
+
+		
+	except Exception as e:
+		print("Error in resetting SOLO settings: {}".format(e))
+
+	return
+	
 def get_solo_settings_client(client_socket): 
 	''' Get current solo settings '''
 	global mySolo, gear_ratio, rpm_limit
@@ -965,6 +1041,10 @@ def get_solo_settings_client(client_socket):
 		print("Speed acceleration value", mySolo.get_speed_acceleration_value()) # Rev/s/s
 		print("Speed deceleration value", mySolo.get_speed_deceleration_value())
 		print("Speed limit", mySolo.get_speed_limit())
+		
+		# Motor direction
+		mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE) # CCW = +ve
+		print("Motor direction", mySolo.get_motor_direction())
 		
 		# Other	
 		print("encoder_hall_ccw_offset", mySolo.get_encoder_hall_ccw_offset())
@@ -1186,12 +1266,12 @@ def start_log_motor_client(client_socket):
 		motor_file_path = os.path.join(exper_folder, os.path.basename("motor_log.csv"))
 		
 		with open(motor_file_path, mode='w', newline="") as file:
-			
+			 
 			# Create csv writer
 			writer = csv.writer(file, delimiter=',')
 			
 			# Write header
-			writer.writerow(["time_s","shaft_speed","motor_speed","ref_motor_speed","iq","motor_torque","load_torque"])
+			writer.writerow(["time_s","load_speed","motor_speed","ref_motor_speed","iq","motor_torque","load_torque"])
 		
 			# Time loop
 			while not stop_log_motor_event.is_set(): # while motor_recording:
@@ -1346,7 +1426,7 @@ def motor_ramp_updown_const_accel(client_socket, peak_rpm, t_start_delay=5., t_i
 			break
 	
 	# Stop delay
-	print("Stop deltay: waiting for {} s".format(t_stop_delay))
+	print("Stop delay: waiting for {} s".format(t_stop_delay))
 	time.sleep(t_stop_delay)
 	print("Ramp profile complete")
 	
@@ -1467,7 +1547,7 @@ def start_log_data(client_socket):
 	# Set sampling rates
 	set_thermocouple_timestep_client(client_socket, 0.1)
 	set_motor_timestep_client(client_socket, 0.1)
-	set_CAL_timestep_client(client_socket, 0.1)
+	set_CAL_timestep_client(client_socket, 0.5) # Need slower time 
 
 	# Clear stop signals before starting
 	stop_log_motor_event.clear()
@@ -1950,6 +2030,8 @@ def melt_server_program():
 		mySolo = solo.SoloMotorControllerUart("/dev/ttyACM0", 0, solo.UartBaudRate.RATE_937500)
 	except:
 		print("Warning: No connection to SOLO. Check power.")
+	# Reset settings
+	reset_solo_settings()
 	
 	
 	#cal controller setup

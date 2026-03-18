@@ -19,3 +19,13 @@ sudo python ~/wax-iss/wax/melt_client.py motor_ramp_updown_const_accel "50" # Mo
 sleep 1
 sudo python ~/wax-iss/wax/melt_client.py motor_ramp_updown_const_accel "100" # Motion profile 100 RPM
 sleep 1
+
+# Stop script
+echo "Stopping fluid rotation experiemnt"
+sudo python ~/wax-iss/wax/melt_client.py set_target_load_speed 0 # Stop rotation
+echo "Ramping down motor"
+sleep 1 # Sleep
+sudo python ~/wax-iss/wax/melt_client.py stop_log_exp # Stop data log, turn off lights, camera
+echo "Stopping lights, camera, data log"
+sleep 5
+echo "Fluid rotation complete"
