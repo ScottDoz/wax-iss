@@ -24,6 +24,9 @@ check_pin(26)
 print("\nMotor ENC B: GPIO 25")
 check_pin(25)
 
+print("\nLED: GPIO 18")
+check_pin(18)
+
 
 
 
