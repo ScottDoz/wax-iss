@@ -1,0 +1,38 @@
+'''
+Test script for sending telemetry from Pi
+Send a message every second. Print received messages.
+
+'''
+
+import serial
+import time
+
+# Define serial connection
+serial_port = serial.Serial(
+	port='/dev/ttyUSB0',
+	baudrate=9600,
+	parity=serial.PARITY_NONE,
+	stopbits=serial.STOPBITS_ONE,
+	bytesize=serial.EIGHTBITS,
+	timeout=1,
+)
+
+# Try sen
+try:
+	while True:
+		# Send data
+		message = "Hello from Raspberry Pi!\n"
+		serial_port.write(message.encode('utf-8'))
+		print(f"Send: {message.strip()}")
+		
+		# Read incoming data (if any)
+		if serial_port.in_waiting > 0:
+			incoming = serial_port.readline().decode('utf-8').strip()
+			print(f"Received: {incoming}")
+		
+		time.sleep(1)
+
+except KeyboardInterrupt:
+	serial_port.close()
+	print("Telemetry connection closed")	
+	
