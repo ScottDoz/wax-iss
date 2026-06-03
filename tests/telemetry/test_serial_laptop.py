@@ -32,6 +32,12 @@ try:
 		time.sleep(0.1)
 
 except KeyboardInterrupt:
+	
+	# Send reply
+	message = "Stopped listening. Goodbye!\n"
+	laptop_port.write(message.encode('utf-8'))
+	print(f"Send: {message.strip()}")
+	
 	laptop_port.close()
 	print("Telemetry connection closed")	
 	
