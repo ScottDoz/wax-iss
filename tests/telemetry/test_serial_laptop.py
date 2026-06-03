@@ -22,8 +22,8 @@ try:
 		# Read incoming data (if any)
 		print("Waiting status: ", laptop_port.in_waiting)
 		if laptop_port.in_waiting > 0:
-			data = laptop_port.readline().decode('utf-8').strip()
-			print("Received from Pi. RAW: ", data)
+			data = laptop_port.read(laptop_port.in_waiting)
+			print("Received from Pi. RAW: ", repr(data))
 			print("Received from Pi: HEX: ", data.hex())
 		
 		# Send reply
