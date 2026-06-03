@@ -9,7 +9,7 @@ import time
 
 # Define serial connection
 laptop_port = serial.Serial(
-	port='COM3',
+	port='COM4',
 	baudrate=9600,
 	timeout=1,
 )
