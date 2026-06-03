@@ -38,6 +38,8 @@ except KeyboardInterrupt:
 	laptop_port.write(message.encode('utf-8'))
 	print(f"Send: {message.strip()}")
 	
+	time.sleep(1)
+	
 	laptop_port.close()
 	print("Telemetry connection closed")	
 	

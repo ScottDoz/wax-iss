@@ -39,6 +39,8 @@ except KeyboardInterrupt:
 	serial_port.write(message.encode('utf-8'))
 	print(f"Send: {message.strip()}")
 	
+	time.sleep(1)
+	
 	serial_port.close()
 	print("Telemetry connection closed")	
 	
