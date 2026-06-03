@@ -28,6 +28,7 @@ try:
 		count +=1
 		
 		# Read incoming data (if any)
+		print("Waiting status: ", serial_port.in_waiting)
 		if serial_port.in_waiting > 0:
 			incoming = serial_port.readline().decode('utf-8').strip()
 			print(f"Received: {incoming}")

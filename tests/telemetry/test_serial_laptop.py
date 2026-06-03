@@ -20,6 +20,7 @@ try:
 		
 		
 		# Read incoming data (if any)
+		print("Waiting status: ", laptop_port.in_waiting)
 		if laptop_port.in_waiting > 0:
 			incoming = laptop_port.readline().decode('utf-8').strip()
 			print(f"Received from Pi: {incoming}")
