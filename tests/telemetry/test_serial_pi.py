@@ -17,13 +17,15 @@ serial_port = serial.Serial(
 	timeout=1,
 )
 
-# Try sen
+# Try sent
+count = 0
 try:
 	while True:
 		# Send data
-		message = "Hello from Raspberry Pi!\n"
+		message = f"Hello from Raspberry Pi! #{count}\n"
 		serial_port.write(message.encode('utf-8'))
 		print(f"Send: {message.strip()}")
+		count +=1
 		
 		# Read incoming data (if any)
 		if serial_port.in_waiting > 0:
