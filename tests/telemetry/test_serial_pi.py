@@ -9,7 +9,7 @@ import time
 
 # Define serial connection
 serial_port = serial.Serial(
-	port='/dev/ttyUSB0',
+	port='/dev/ttyUSB1',
 	baudrate=9600,
 	parity=serial.PARITY_NONE,
 	stopbits=serial.STOPBITS_ONE,
