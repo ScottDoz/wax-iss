@@ -24,6 +24,8 @@ for mode in camera.sensor_modes:
 #Mode 2: {'format': SRGGB10_CSI2P, 'unpacked': 'SRGGB10', 'bit_depth': 10, 'size': (4608, 2592), 'fps': 14.35, 'crop_limits': (0, 0, 4608, 2592), 'exposure_limits': (26, 112015443, None)}
 
 
+
+
 # Configure camera
 camera_config = camera.create_preview_configuration()
 #video_config = camera.create_video_configuration(main={'size':(1920,1080)}) # Works
@@ -34,13 +36,6 @@ camera_config = camera.create_preview_configuration()
 #video_config = camera.create_video_configuration(main={'size':(4608, 2592)}) # Full res, unsufficient buffer
 #camera.configure(video_config)
 
-
-
-# New method
-# ~ full_mode = next(
-	# ~ m for m in camera.sensor_modes
-	# ~ if m["size"] == (4608, 2592)
-# ~ )
 
 # New method
 mode = camera.sensor_modes[1] # (4608, 2592) wide field 56 fps
@@ -69,7 +64,10 @@ camera.start_recording(encoder,'test.h264')
 print("\nCamera controls")
 for key, value in camera.camera_controls.items():
 	print(key,value)
-	
+
+print("Camera FrameDurationLimits: ", camera.camera_controls["FrameDurationLimits"])
+#Camera FrameDurationLimits:  (17849, 112075593, None) # 17849 = 56 fps is the max frame rate
+time.sleep(1)
 	
 # Manual focus
 # Tube Length = 20 cm
