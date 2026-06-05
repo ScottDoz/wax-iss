@@ -76,7 +76,6 @@ for key, value in camera.camera_controls.items():
 # Tube Length = 20 cm
 # Minimum = 2.857 (LensPosition=30) ~ start of tube
 # End of tube: 22.5 cm
-
 focus_distance = 3.0 # Focus distance in cm
 print("\nManual focus" )
 print(f"Focus distance: {focus_distance} (cm)" )

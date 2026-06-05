@@ -7,7 +7,8 @@ setpoint=20
 sudo_pass="raspberry"
 
 echo "Starting casting experiemnt"
-sudo python ~/wax-iss/wax/melt_client.py start_log_exp $label,"Cast","$rpm","$setpoint" # Lights, camera, data log
+#sudo python ~/wax-iss/wax/melt_client.py start_log_exp $label,"Cast","$rpm","$setpoint" # Lights, camera, data log
+sudo python ~/wax-iss/wax/melt_client.py start_log_preview_exp $label,"Cast","$rpm","$setpoint" # Lights, camera, data log
 sleep 3
 sudo python ~/wax-iss/wax/melt_client.py set_setpoint "$setpoint" # Change CAL temperature setpoint
 sleep 1

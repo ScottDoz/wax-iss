@@ -31,6 +31,7 @@ import os
 from libcamera import Transform
 from picamera2 import Picamera2, Preview
 from picamera2.encoders import H264Encoder
+from libcamera import controls
 import pdb
 import glob
 import numpy as np
@@ -171,21 +172,33 @@ def start_recording(client_socket, preview=False):
 		return
 
 	try:
+		
+		# Video filename
+		# Currenty, uses exper_folder from global variable
 		base_folder = "video.h264"
+		video_output_file = os.path.join(exper_folder, os.path.basename(base_folder))
 		#  if len(data.split()) > 1:
 		#       file_name = data.split(" ", 1)[1]
 		#      if not file_name.startswith(base_folder):
-		video_output_file = os.path.join(exper_folder, os.path.basename(base_folder))
+		
 		#      else:
 		#        video_output_file = file_name
 		#else:
 		#    video_output_file = os.path.join(base_folder, "output_video.h264")
 		#rotation
-		if rotation:
-			video_config = picam2.create_video_configuration(main={'size':(1920,1080)},transform=Transform(hflip=True, vflip=True))
-		else:
-			video_config = picam2.create_video_configuration(main={'size':(1920,1080)},transform=Transform(hflip=True,vflip=True))
-	
+		
+		
+		# Configure video
+		mode = picam2.sensor_modes[2] # (4608, 2592) wide field
+		video_config = picam2.create_video_configuration(
+			main={'size':(1920,1080)}, # (4608, 2592)
+			lores={"size":(640,360)},
+			display="lores",
+			buffer_count=2,
+			raw=mode, 
+		)
+		#video_config = picam2.create_video_configuration(main={'size':(1920,1080)},transform=Transform(hflip=True, vflip=True))
+		
 		try:
 			picam2.configure(video_config)
 		except:
@@ -199,15 +212,72 @@ def start_recording(client_socket, preview=False):
 			except Exception as e:
 				print(f"Error in camera preview: {e}")
 		
-		
+		# Start recording
+		encoder = H264Encoder(10000000) # Max support is 1920x1080
 		picam2.start()
 		picam2.start_recording(encoder, video_output_file)
 		camera_is_recording = True
 		print("Recording started.")
 		client_socket.sendall(f"Recording started. Saving to {video_output_file}\n".encode('utf-8'))
+		
+		# Manual focus of camera
+		# Tube Length = 20 cm
+		# Minimum = 2.857 (LensPosition=30) ~ start of tube
+		# End of tube: 22.5 cm
+
+		focus_distance = 3.0 # Focus distance in cm
+		print("\nManual focus" )
+		print(f"Focus distance: {focus_distance} (cm)" )
+		print(f"LensPosition = 1/focus_dist[m]: {1/(focus_distance/100)}" )
+		picam2.set_controls({"AfMode":controls.AfModeEnum.Manual })
+		picam2.set_controls({"LensPosition":1/(focus_distance/100)})
+		time.sleep(1)
+		
+		# Get camera metadata
+		md = picam2.capture_metadata()
+		print('AfState:', md['AfState'])
+		print('LensPosition: ', md['LensPosition'])
+		print(f"FocusDistance: {(1/md['LensPosition'])*100} [cm]")
+		
+		
 	except Exception as e:
 		client_socket.sendall(f"Error starting recording: {str(e)}\n".encode('utf-8'))
-        
+
+def set_camera_focus_distance(client_socket, focus_distance):
+	''' Set the camera focus distance (cm) '''
+	global picam2
+	
+	try:
+		print("\nManual focus" )
+		print(f"Focus distance: {focus_distance} (cm)" )
+		print(f"LensPosition = 1/focus_dist[m]: {1/(focus_distance/100)}" )
+		picam2.set_controls({"AfMode":controls.AfModeEnum.Manual })
+		picam2.set_controls({"LensPosition":1/(focus_distance/100)})
+		time.sleep(1)
+		
+	except Exception as e:
+		client_socket.sendall(f"Error setting camera focus: {str(e)}\n".encode('utf-8'))
+	
+def get_camera_metadata(client_socket):
+	''' Get the camera metadata '''
+	global picam2
+	
+	try:
+		md = picam2.capture_metadata()
+		print('AfState:', md['AfState'])
+		print('LensPosition: ', md['LensPosition'])
+		print(f"FocusDistance: {(1/md['LensPosition'])*100} [cm]")
+		
+		# FPS
+		print("FrameDuration: ", md['FrameDuration'], " ms")
+		print("fps: ", 1e6/md['FrameDuration'])
+		
+		
+	except Exception as e:
+		client_socket.sendall(f"Error getting camera metadata: {str(e)}\n".encode('utf-8'))
+	
+
+
 def rotate_camera(client_socket, data):
 	''' Rotate camera view by 180 deg '''
 	global rotation, picam2
@@ -1607,7 +1677,7 @@ def stop_log_data(client_socket):
 # ######################################################################
 
 # Experiment logs
-def start_log_exp(client_socket, label, prefix, rpm_set, temp_setpoint):
+def start_log_exp(client_socket, label, prefix, rpm_set, temp_setpoint, camera_preview=False):
 	''' Start lights, camera, data logging into an experiment folder '''
 	global melt_running
 	global exper_folder, thermocouple_recording, motor_recording
@@ -1640,7 +1710,7 @@ def start_log_exp(client_socket, label, prefix, rpm_set, temp_setpoint):
 	
 	#start camera recording
 	try:
-		start_recording(client_socket)
+		start_recording(client_socket, preview=camera_preview)
 	except:
 		print("Error starting camera")
 	
@@ -1749,16 +1819,28 @@ def handle_client_connection(client_socket):
 				break
 			
 			# Camera commands
-			if data.startswith("start_camera"):
+			elif data == "start_camera":
+				#if len(data.split()) > 1:
+				#	output_file = data.split(" ", 1)[1]
+				start_recording(client_socket)
+				break
+			elif data == "start_camera_preview":
 				if len(data.split()) > 1:
 					output_file = data.split(" ", 1)[1]
-				start_recording(client_socket)
+				start_recording(client_socket, preview=True)
 				break
 			elif data == "stop_camera":
 				stop_recording()
 				break
 			elif data.startswith("rotate_camera"):
 				rotate_camera(client_socket, data)
+				break
+			elif data.startswith("set_camera_focus_distance"):
+				focus_distance = float(data[25:])
+				set_camera_focus_distance(client_socket, focus_distance)
+				break
+			elif data.startswith("get_camera_metadata"):
+				get_camera_metadata(client_socket)
 				break
 				
 			# Thermocouple commands
@@ -1890,6 +1972,14 @@ def handle_client_connection(client_socket):
 				else:
 					temp = 0.0
 				start_log_exp(client_socket, str.strip(data_list[0]), str.strip(data_list[1]),  float(data_list[2]), temp)
+				break
+			elif data.startswith("start_log_preview_exp"):
+				data_list = data[21:].split(",") # label, exp_type, 
+				if len(data_list) > 3:
+					temp = data_list[3]
+				else:
+					temp = 0.0
+				start_log_exp(client_socket, str.strip(data_list[0]), str.strip(data_list[1]),  float(data_list[2]), temp, camera_preview=True)
 				break
 			elif data == "stop_log_exp":
 				client_socket.sendall(b"Stopping Experiment Log.\n")
