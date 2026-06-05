@@ -6,8 +6,9 @@ from libcamera import controls
 import time
 import pdb
 
-#action = 'record'
-action = 'preview'
+
+#preview = False
+preview = True
 
 
 # Create camera instance
@@ -36,27 +37,25 @@ camera_config = camera.create_preview_configuration()
 
 
 # New method
-full_mode = next(
-	m for m in camera.sensor_modes
-	if m["size"] == (4608, 2592)
-)
+# ~ full_mode = next(
+	# ~ m for m in camera.sensor_modes
+	# ~ if m["size"] == (4608, 2592)
+# ~ )
 
-
-
-# Old method
-mode = camera.sensor_modes[2] # (4608, 2592) wide field
+# New method
+mode = camera.sensor_modes[1] # (4608, 2592) wide field 56 fps
+#mode = camera.sensor_modes[2] # (4608, 2592) wide field 14 fps
 video_config = camera.create_video_configuration(
-	#raw = {"format": mode['format'], "size":mode['size']},
-	#main = { "size":mode['size']},
 	main={'size':(1920,1080)}, # (4608, 2592)
 	lores={"size":(640,360)},
 	display="lores",
 	buffer_count=2,
-	raw=mode, 
+	raw=mode,
+	controls={'FrameRate': 56} # Higher frame rate
 )
 camera.configure(video_config)
 
-if action.lower() == 'preview':
+if preview:
 	camera.start_preview(Preview.QTGL)
 
 encoder = H264Encoder(10000000) # Max support is 1920x1080
@@ -92,6 +91,8 @@ while count<30:
 	print('AfState:', md['AfState'])
 	print('LensPosition: ', md['LensPosition'])
 	print(f"FocusDistance: {(1/md['LensPosition'])*100} [cm]")
+	print("FrameDuration: ", md['FrameDuration'], " ms")
+	print("fps: ", 1e6/md['FrameDuration'])
 	time.sleep(1)
 	count += 1
 

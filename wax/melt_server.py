@@ -189,13 +189,14 @@ def start_recording(client_socket, preview=False):
 		
 		
 		# Configure video
-		mode = picam2.sensor_modes[2] # (4608, 2592) wide field
+		mode = picam2.sensor_modes[1] # (4608, 2592) wide field 56 fps
 		video_config = picam2.create_video_configuration(
 			main={'size':(1920,1080)}, # (4608, 2592)
 			lores={"size":(640,360)},
 			display="lores",
 			buffer_count=2,
 			raw=mode, 
+			controls={'FrameRate': 56} # Highest framerate for mode 1 is 56 fps
 		)
 		#video_config = picam2.create_video_configuration(main={'size':(1920,1080)},transform=Transform(hflip=True, vflip=True))
 		
@@ -1727,6 +1728,7 @@ def start_log_exp(client_socket, label, prefix, rpm_set, temp_setpoint, camera_p
 
 def stop_log_exp(client_socket):
 	''' Stop experiemnt log files, turn lights/camera off '''
+	global exper_folder
 	
 	# Motor off (TODO)
 	# Camera off
@@ -1762,6 +1764,7 @@ def stop_log_exp(client_socket):
 	
 	time.sleep(1.) # Give threads a short time to exit
 	print("Stopped experiment log.")
+	print("Files saved to: ", exper_folder)
 	
 	
 	return
