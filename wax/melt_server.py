@@ -1071,7 +1071,14 @@ def reset_solo_settings():
 		print("Motor inductance (H)", mySolo.get_motor_inductance())
 		
 		print("Communication is working", mySolo.communication_is_working())
+		
+		# Motion profile mode
 		print("Motion profile mode", mySolo.get_motion_profile_mode())
+		print("Motion profile variable 1", mySolo.get_motion_profile_variable1())
+		print("Motion profile variable 2", mySolo.get_motion_profile_variable2())
+		print("Motion profile variable 3", mySolo.get_motion_profile_variable3())
+		print("Motion profile variable 4", mySolo.get_motion_profile_variable4())
+		print("Motion profile variable 5", mySolo.get_motion_profile_variable5())
 		
 		# Motor speed limit
 		rpm_limit = 200*gear_ratio # Maximum allowed speed (motor)
@@ -1125,8 +1132,15 @@ def get_solo_settings_client(client_socket):
 		print("Motor inductance (H)", mySolo.get_motor_inductance())
 		
 		print("Communication is working", mySolo.communication_is_working())
-		print("Motion profile mode", mySolo.get_motion_profile_mode())
 		
+		# Motion profile mode
+		print("Motion profile mode", mySolo.get_motion_profile_mode())
+		print("Motion profile variable 1", mySolo.get_motion_profile_variable1())
+		print("Motion profile variable 2", mySolo.get_motion_profile_variable2())
+		print("Motion profile variable 3", mySolo.get_motion_profile_variable3())
+		print("Motion profile variable 4", mySolo.get_motion_profile_variable4())
+		print("Motion profile variable 5", mySolo.get_motion_profile_variable5())
+
 		print("Motor speed limit (RPM)", rpm_limit)
 
 		

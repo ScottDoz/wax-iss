@@ -150,8 +150,9 @@ while True:
         
     # Get the current speed and torque
     actualMotorSpeed, error = mySolo.get_speed_feedback()
-    actualMotorTorque, error = mySolo.get_quadrature_current_iq_feedback()
-    print("time: " + str(t) + "s. " + "Motor Speed: " + str(actualMotorSpeed) + " RPM. " + "Measured Iq/Torque[A]: " + str(actualMotorTorque))
+    actualMotorIq, error = mySolo.get_quadrature_current_iq_feedback()
+    #print("time: " + str(t) + "s. " + "Motor Speed: " + str(actualMotorSpeed) + " RPM. " + "Measured Iq[A]: " + str(actualMotorIq))
+    print(f"time: {t:.2f} s. Motor Speed: {actualMotorSpeed} RPM. Shaft Speed: {actualMotorSpeed/gear_ratio:.2f} RPM. Measured Iq {actualMotorIq:.2f} [A]")
     time.sleep(0.1)
     
     if abs(actualMotorSpeed - target_speed_motor) <= 1.0:
@@ -177,9 +178,14 @@ while True:
 
     # Get the current speed and torque
     actualMotorSpeed, error = mySolo.get_speed_feedback()
-    actualMotorTorque, error = mySolo.get_quadrature_current_iq_feedback()
-    print("time: " + str(t) + "s. " + "Motor Speed: " + str(actualMotorSpeed) + " RPM. " + "Measured Iq/Torque[A]: " + str(actualMotorTorque))
+    actualMotorIq, error = mySolo.get_quadrature_current_iq_feedback()
+    #print("time: " + str(t) + "s. " + "Motor Speed: " + str(actualMotorSpeed) + " RPM. " + "Measured Iq [A]: " + str(actualMotorIq))
+    print(f"time: {t:.2f} s. Motor Speed: {actualMotorSpeed} RPM. Shaft Speed: {actualMotorSpeed/gear_ratio:.2f} RPM. Measured Iq {actualMotorIq:.2f} [A]")
     time.sleep(0.1)
+    
+    # ~ error_code = mySolo.GetErrorRegister()
+	# ~ if error_code !=0:
+		# ~ print(f"Error detected! Decimal Code: {error_code}")
     
     if abs(actualMotorSpeed) <= 1.0:
         # Achieved target speed. End loop
@@ -189,6 +195,14 @@ while True:
 time.sleep(5)
 
 actualMotorSpeed, error = mySolo.get_speed_feedback()
-actualMotorTorque, error = mySolo.get_quadrature_current_iq_feedback()
-print("time: " + str(t) + "s. " + "Motor Speed: " + str(actualMotorSpeed) + " RPM. " + "Measured Iq/Torque[A]: " + str(actualMotorTorque))
+actualMotorIq, error = mySolo.get_quadrature_current_iq_feedback()
+#print("time: " + str(t) + "s. " + "Motor Speed: " + str(actualMotorSpeed) + " RPM. " + "Measured Iq/Torque[A]: " + str(actualMotorIq))
+print(f"time: {t:.2f} s. Motor Speed: {actualMotorSpeed} RPM. Shaft Speed: {actualMotorSpeed/gear_ratio:.2f} RPM. Measured Iq {actualMotorIq:.2f} [A]")
 print("End of test")
+
+# Close connection
+print("Closing solo connection")
+mySolo.serial_close()
+
+
+
