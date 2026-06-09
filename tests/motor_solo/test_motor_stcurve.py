@@ -10,9 +10,59 @@ import SoloPy as solo
 import time
 import csv
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import pdb
 
+# ######################################################################
+#                          Inputs
+# ######################################################################
+
+mode = 'st_time-based'
+#mode = 'st_time_optimal'
+
+# Note: time-based curve is much smoother
+
+
+# Test speed
+target_speed_shaft = 200. #200. # Load speed (RPM)
+
+
+# Time optimal ST-curve parameters
+stCurve_maxAccel = 5 # Max accelleration (rev/s/s ???) (RPM/s)
+stCurve_maxJerk = 0.5 # Maximum Jerk (rev/s/s/s???) (RPM/s/s)
+# *** values look like they are in rev/s/s and rev/s/s/s
+
+# Time-based ST-curve parameters
+stCurve_T13 = 3 # Time of Segments 1 and 3 (take-off/landing segment) (s)
+stCurve_T2 = 0  # Time of segement 2 (max accel segment) (s)
+
+# Motor Step Response settings
+speedAccelValue = 5.0/3. # Speed acceleration value (rev/s/s) 5 == 300 rpm/s
+speedDecelValue = 5.0/3. # Speed deceleration value (rev/s/s) 5 == 300 rpm/s
+speedLimit = 700*24 # Speed limit (rpm)
+
+
+# Motor Settings
+pwmFrequency = 80 # Desired Switching or PWM Frequency at Output
+numberOfPoles = 4 # Motor's Number of Poles
+currentLimit = 3.5 # Current Limit of the Motor
+numberOfEncoderLines = 1024 # Motor's Number of Encoder Lines (PPR pre-quad)
+speedControllerKp = 0.2219924 # Speed controller Kp
+speedControllerKi = 0.0070648 # Speed controller Ki
+busVoltage = 0 # Battery or Bus Voltage
+actualMotorTorque = 0 # Motor Torque feedback
+actualMotorSpeed = 0 # Motor speed feedback
+actualMotorPosition = 0 # Motor position feedback
+
+# Motor parameters
+gear_ratio = 23.76 # Gear ratio
+kt = 5.9e-3 # Motor torque constant (N.m/A) 5.9 mN.m/A = 5.9e-3 N.m/A for Faulhaber 2264 BP4
+
+
+# ######################################################################
+#                   Connect to Motor
+# ######################################################################
 
 # Instanciate a SOLO object:
 # check with SOLO motion terminal that you are able to connect to your device 
@@ -27,30 +77,6 @@ while communication_is_working is False:
     time.sleep(1)
     communication_is_working, error = mySolo.communication_is_working()
 print("Communication Established succuessfully!")
-
-# Motor Settings
-pwmFrequency = 80 # Desired Switching or PWM Frequency at Output
-numberOfPoles = 4 # Motor's Number of Poles
-currentLimit = 3.5 # Current Limit of the Motor
-numberOfEncoderLines = 1024 # Motor's Number of Encoder Lines (PPR pre-quad)
-speedControllerKp = 0.2219924 # Speed controller Kp
-speedControllerKi = 0.0070648 # Speed controller Ki
-speedAccelValue = 5.0 # Speed acceleration value (rev/s/s) == 300 rpm/s
-speedDecelValue = 5.0 # Speed deceleration value (rev/s/s) == 300 rpm/s
-speedLimit = 700*24 # Speed limit (rpm)
-busVoltage = 0 # Battery or Bus Voltage
-actualMotorTorque = 0 # Motor Torque feedback
-actualMotorSpeed = 0 # Motor speed feedback
-actualMotorPosition = 0 # Motor position feedback
-
-# ST-curve parameters
-stCurve_maxAccel = 100 # Max accelleration (RPM/s)
-stCurve_maxJerk = 20 # Maximum Jerk (RPM/s/s)
-
-# Motor parameters
-gear_ratio = 23.76 # Gear ratio
-kt = 5.9e-3 # Motor torque constant (N.m/A) 5.9 mN.m/A = 5.9e-3 N.m/A for Faulhaber 2264 BP4
-
 
 # Initial Configuration of the device and the Motor
 # Fixed settings
@@ -72,15 +98,24 @@ mySolo.set_speed_limit(speedLimit)
 
 
 # ST-Curve settings
-# Use Motion profile 3
-mySolo.set_motion_profile_mode(2)
-mySolo.set_motion_profile_variable1(stCurve_maxAccel)
-mySolo.set_motion_profile_variable2(stCurve_maxJerk)
+
+if mode == 'st_time-based':
+    # Use Motion profile 2
+    mySolo.set_motion_profile_mode(1)
+    mySolo.set_motion_profile_variable1(stCurve_T13)
+    mySolo.set_motion_profile_variable2(stCurve_T2)
+
+elif mode == 'st_time_optimal':
+    # Use Motion profile 3
+    mySolo.set_motion_profile_mode(2)
+    mySolo.set_motion_profile_variable1(stCurve_maxAccel)
+    mySolo.set_motion_profile_variable2(stCurve_maxJerk)
+
+    
 
 
-
-# run the motor identification to Auto-tune the current controller gains Kp and Ki needed for Torque Loop
-# run ID. always after selecting the Motor Type!
+# run the motor identification to Auto-tune the current controller gains Kp and Ki 
+# needed for Torque Loop run ID. always after selecting the Motor Type!
 # ID. doesn't need to be called everytime, only one time after wiring up the Motor will be enough
 # the ID. values will be remembered by SOLO after power recycling
 mySolo.motor_parameters_identification(solo.Action.START)
@@ -117,6 +152,11 @@ print("Motion profile mode", mySolo.get_motion_profile_mode())
 print("Motion profile variable 1", mySolo.get_motion_profile_variable1())
 print("Motion profile variable 2", mySolo.get_motion_profile_variable2())
 
+
+# ######################################################################
+#                          Ramp Up/Down
+# ######################################################################
+
     
 print("-------------------\n\n\n")
 print("Begin Speed Test")
@@ -127,18 +167,14 @@ change_rotation_rate_flag = True
 
 
 # Target speed
-
-target_speed_shaft = 200. #200. # Load speed
 target_speed_motor = target_speed_shaft*gear_ratio # Motor speed
 
-
+# Create log file
 motor_filename = 'motor_log.csv'
 with open(motor_filename, mode='w', newline="") as file:
 			 
-    # Create csv writer
+    # Create csv writer and write header
     writer = csv.writer(file, delimiter=',')
-			
-    # Write header
     writer.writerow(["time_s","load_speed","motor_speed","ref_motor_speed","iq","motor_torque","load_torque"])
     
     
@@ -168,13 +204,11 @@ with open(motor_filename, mode='w', newline="") as file:
         
         print(f"time: {t:.2f} s. Motor Speed: {motor_speed} RPM. Shaft Speed: {motor_speed/gear_ratio:.2f} RPM. Measured Iq {motor_Iq:.2f} [A]")
         
-        # Write to file
-        #                  time            
+        # Write to file          
         writer.writerow([round(t,3), round(load_speed,3), round(motor_speed,3), round(target_speed_motor,3), round(motor_Iq,6), round(motor_torque,6), round(load_torque,6)])
         file.flush()
         
         time.sleep(0.1)
-        
         
         
         if abs(motor_speed - target_speed_motor) <= 1.0:
@@ -182,8 +216,9 @@ with open(motor_filename, mode='w', newline="") as file:
             print("Achieved target speed")
             break
 
-        if t>20:
+        if t>60:
             # End loop
+            print('Timeout')
             break
 
     # Ramp down --------------------------------------------------------
@@ -209,8 +244,7 @@ with open(motor_filename, mode='w', newline="") as file:
         
         print(f"time: {t:.2f} s. Motor Speed: {motor_speed} RPM. Shaft Speed: {motor_speed/gear_ratio:.2f} RPM. Measured Iq {motor_Iq:.2f} [A]")
         
-        # Write to file
-        #                  time            
+        # Write to file        
         writer.writerow([round(t,3), round(load_speed,3), round(motor_speed,3), round(target_speed_motor,3), round(motor_Iq,6), round(motor_torque,6), round(load_torque,6)])
         file.flush()
         
@@ -224,6 +258,11 @@ with open(motor_filename, mode='w', newline="") as file:
             # Achieved target speed. End loop
             print("Motor stopped")
             break
+        
+        if t>120:
+            # End loop
+            print('Timeout')
+            break
 
     time.sleep(5)
 
@@ -231,39 +270,90 @@ actualMotorSpeed, error = mySolo.get_speed_feedback()
 actualMotorIq, error = mySolo.get_quadrature_current_iq_feedback()
 print(f"time: {t:.2f} s. Motor Speed: {actualMotorSpeed} RPM. Shaft Speed: {actualMotorSpeed/gear_ratio:.2f} RPM. Measured Iq {actualMotorIq:.2f} [A]")
 print("End of test")
+print("Motion profile mode", mySolo.get_motion_profile_mode())
+print("Motion profile variable 1", mySolo.get_motion_profile_variable1())
+print("Motion profile variable 2", mySolo.get_motion_profile_variable2())
 
 # Close connection
 print("Closing solo connection")
 mySolo.serial_close()
 
 
-# Plot curve
+# ######################################################################
+#                          Plot Data
+# ######################################################################
 
 
 # Read data
+# time_s,load_speed,motor_speed,ref_motor_speed,iq,motor_torque,load_torque
 dfm = pd.read_csv(motor_filename) # Motor data
 
-# Plot
-fig, axs = plt.subplots(nrows=2, ncols=1, figsize=(5,8), sharex=True)
+# Compute acceleration and jerk
+dfm['load_accel'] = np.gradient(dfm.load_speed, dfm.time_s) # Load accel (RPM/s)
+dfm['load_jerk'] = np.gradient(dfm.load_accel, dfm.time_s) # Load jerk (RPM/s/s)
+dfm['motor_accel'] = np.gradient(dfm.motor_speed, dfm.time_s) # Load accel (RPM/s)
+dfm['motor_jerk'] = np.gradient(dfm.motor_accel, dfm.time_s) # Load jerk (RPM/s/s)
 
-# Motor speed
-axs[0].plot(dfm.time_s, dfm.ref_motor_speed/gear_ratio, '--r', label='Ref load speed')
-axs[0].plot(dfm.time_s, dfm.load_speed,'-k', label='Load speed')
-axs[0].legend()
-axs[0].set_ylabel("Speed (RPM)")
-#axs[0].set_xlabel("Time (s)")
+# Plot
+fig, axs = plt.subplots(nrows=4, ncols=2, figsize=(8,8), sharex=True)
+time = dfm.time_s.to_numpy()
+
+# Motor Side -------------------------------------------------
+axs[0,0].set_title("Motor Side") 
+# Speed
+axs[0,0].plot(dfm.time_s, dfm.ref_motor_speed, '--r', label='Ref motor speed')
+axs[0,0].plot(dfm.time_s, dfm.motor_speed,'-k', label='Motor speed')
+axs[0,0].legend()
+axs[0,0].set_ylabel("Speed (RPM)")
+#axs[0,0].set_xlabel("Time (s)")
 
 # Acceleration
-axs[1].plot(dfm.time_s, dfm.ref_motor_speed/gear_ratio, '--r', label='Ref load speed')
-axs[1].plot(dfm.time_s, dfm.load_speed,'-k', label='Load speed')
-axs[1].legend()
-axs[1].set_ylabel("Speed (RPM)")
+axs[1,0].plot(dfm.time_s, dfm.motor_accel,'-k', label='Motor accel')
+axs[1,0].legend()
+axs[1,0].set_ylabel("Accel (RPM/s)")
+if mode == 'st_time_optimal':
+    axs[1,0].plot([time[0], time[-1]], [stCurve_maxAccel*60, stCurve_maxAccel*60] , '--r', label='Max accel')
 
 
-# Motor torque
-axs[1].plot(dfm.time_s, dfm.load_torque, '-k', label='Load torque')
-axs[1].set_ylabel("Load Torque (N.m)")
-#axs[1].set_xlabel("Time (s)")
+# Jerk
+axs[2,0].plot(dfm.time_s, dfm.motor_jerk,'-k', label='Motor jerk')
+axs[2,0].legend()
+axs[2,0].set_ylabel("Jerk (RPM/s/s)")
+if mode == 'st_time_optimal':
+    axs[2,0].plot([time[0], time[-1]], [stCurve_maxJerk*60, stCurve_maxJerk*60], '--r', label='Max jerk')
+
+
+# Torque
+axs[3,0].plot(dfm.time_s, dfm.motor_torque, '-k', label='Motor torque')
+axs[3,0].set_ylabel("Torque (N.m)")
+axs[3,0].set_xlabel("Time (s)")
+
+# Load Side -------------------------------------------------
+axs[0,1].set_title("Load Side") 
+
+# Speed
+axs[0,1].plot(dfm.time_s, dfm.ref_motor_speed/gear_ratio, '--r', label='Ref load speed')
+axs[0,1].plot(dfm.time_s, dfm.load_speed,'-k', label='Load speed')
+axs[0,1].legend()
+axs[0,1].set_ylabel("Speed (RPM)")
+#axs[0,1].set_xlabel("Time (s)")
+
+# Acceleration
+#axs[1,1].plot([time[0], time[-1]], [stCurve_maxAccel/gear_ratio, stCurve_maxAccel/gear_ratio] , '--r', label='Max accel')
+axs[1,1].plot(dfm.time_s, dfm.load_accel,'-k', label='Load accel')
+axs[1,1].legend()
+axs[1,1].set_ylabel("Accel (RPM/s)")
+
+# Acceleration
+#axs[2,1].plot([time[0], time[-1]], [stCurve_maxJerk/gear_ratio, stCurve_maxJerk/gear_ratio], '--r', label='Max jerk')
+axs[2,1].plot(dfm.time_s, dfm.load_jerk,'-k', label='Load jerk')
+axs[2,1].legend()
+axs[2,1].set_ylabel("Jerk (RPM/s/s)")
+
+# Torque
+axs[3,1].plot(dfm.time_s, dfm.load_torque, '-k', label='Load torque')
+axs[3,1].set_ylabel("Torque (N.m)")
+axs[3,1].set_xlabel("Time (s)")
 
 plt.show()
 
