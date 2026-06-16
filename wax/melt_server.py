@@ -624,43 +624,43 @@ def set_setpoint_socket(client_socket, data):
 		
 		# Write 1st message and return buffer
 		ser_cal.write(first_message)
-		print("sent first message (enter program mode)")
+		#print("sent first message (enter program mode)")
 		time.sleep(0.1) #wait 0.1 seconds
 		if ser_cal.in_waiting>0:
 			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
-			print('recieved: ',buf.hex())
+			#print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
 		# Write 2nd message and return buffer
 		ser_cal.write(second_message)
-		print("sent second message (security message)")
+		#print("sent second message (security message)")
 		time.sleep(0.1) #wait 0.1 seconds
 		if ser_cal.in_waiting>0:
 			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
-			print('recieved: ',buf.hex())
+			#print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
 		ser_cal.write(setpoint_message)
-		print("writing setpoint")
+		#print("writing setpoint")
 		time.sleep(0.1)
 
 		ser_cal.write(exit_program_mode)
-		print("exiting program mode")
+		#print("exiting program mode")
 		time.sleep(0.1) #wait 0.1 seconds
 		if ser_cal.in_waiting>0:
 			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
-			print('recieved: ',buf.hex())
+			#print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
 		ser_cal.write(exit_program_mode_2nd)
-		print("security byte")
+		#print("security byte")
 		time.sleep(0.1) #wait 0.1 seconds
 		if ser_cal.in_waiting>0:
 			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
-			print('recieved: ',buf.hex())
+			#print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
@@ -769,20 +769,20 @@ def set_setpoint_melt(client_socket, setpoint):
 	
 	
 		ser_cal.write(first_message)
-		print("sent first message (enter program mode)")
+		#print("sent first message (enter program mode)")
 		time.sleep(0.1) #wait 0.1 seconds
 		if ser_cal.in_waiting>0:
 			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
-			print('recieved: ',buf.hex())
+			#print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
 		ser_cal.write(second_message)
-		print("sent second message (security message)")
+		#print("sent second message (security message)")
 		time.sleep(0.1) #wait 0.1 seconds
 		if ser_cal.in_waiting>0:
 			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
-			print('recieved: ',buf.hex())
+			#print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
@@ -791,20 +791,20 @@ def set_setpoint_melt(client_socket, setpoint):
 		time.sleep(0.1)
 
 		ser_cal.write(exit_program_mode)
-		print("exiting program mode")
+		#print("exiting program mode")
 		time.sleep(0.1) #wait 0.1 seconds
 		if ser_cal.in_waiting>0:
 			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
-			print('recieved: ',buf.hex())
+			#print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
 		ser_cal.write(exit_program_mode_2nd)
-		print("security byte")
+		#print("security byte")
 		time.sleep(0.1) #wait 0.1 seconds
 		if ser_cal.in_waiting>0:
 			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
-			print('recieved: ',buf.hex())
+			#print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
@@ -1148,6 +1148,131 @@ def get_solo_settings_client(client_socket):
 		client_socket.sendall(f"Error in reading SOLO settings: {str(e)}\n".encode('utf-8'))
 
 	return
+	
+# Change motion profile mode
+
+def set_motor_mode_ramp(client_socket):
+	'''
+	Set motor controller in Mode 1 - ramp.
+	Will use current acceleration
+
+	|          ________
+	|         /
+	|        /st
+	|       /
+	|      /
+	|     /
+	|____/
+	|_________________
+	|< T1 ><T2>< T3 >
+	
+	Parameters
+	----------
+	stCurve_T13: Time of T1 and T3 section of curve
+	stCurve_T2: Time of T2 section of curve
+	
+	'''
+	global mySolo
+	
+	try:
+		# Select profile mode
+		mySolo.set_motion_profile_mode(0) # st-curve time-based
+		# Get parameters
+		accel, _ = mySolo.get_speed_acceleration_value() # accel (rev/s/s)
+		# Printouts
+		print("\nSet motion profile 1: RAMP")
+		print(f"Current accel = {accel} rev/s/s = {accel*60} RPM/s \n")
+	
+	except Exception as e:
+		client_socket.sendall(f"Error in setting SOLO settings: {str(e)}\n".encode('utf-8'))
+
+	return
+
+def set_motor_mode_st_time_based(client_socket,stCurve_T13,stCurve_T2):
+	'''
+	Set motor controller in Mode 2 - time-based st-curve mode.
+
+    |               .	
+	|            . 
+	|          .
+	|        /
+	|       /
+	|      /
+	|     .
+	|   . 
+	|.  
+	|_________________
+	|< T1 ><T2>< T3 >
+	
+	Parameters
+	----------
+	stCurve_T13: Time of T1 and T3 section of curve
+	stCurve_T2: Time of T2 section of curve
+	
+	'''
+	global mySolo
+	
+	try:
+		# Select profile mode
+		mySolo.set_motion_profile_mode(1) # st-curve time-based
+		
+		# Set parameters
+		mySolo.set_motion_profile_variable1(stCurve_T13) # T1=T3 times (s)
+		mySolo.set_motion_profile_variable2(stCurve_T2)  # T2 time (s) (linear section)
+		
+		# Printouts
+		print("\nSet motion profile 2: st-curve time-based")
+		print(f"Time T1 = T3 = {stCurve_T13} s (ramp up/down)")
+		print(f"Time T2 = {stCurve_T2} s (linear accel) \n")
+	
+	except Exception as e:
+		client_socket.sendall(f"Error in setting SOLO settings: {str(e)}\n".encode('utf-8'))
+
+	return
+
+# Change motion profile mode
+def set_motor_mode_st_time_optimal(client_socket,stCurve_maxAccel,stCurve_maxJerk):
+	'''
+	Set motor controller in Mode 3 - time-optimal st-curve mode.
+
+    |               .	
+	|            . 
+	|          .
+	|        /
+	|       /
+	|      /
+	|     .
+	|   . 
+	|.  
+	|_________________
+	| 
+	
+	Parameters
+	----------
+	stCurve_maxAccel: Max acceleration (rev/s/s ???)
+	stCurve_maxJerk:  Max jerk (rev/s/s/s???)
+	
+	'''
+	global mySolo
+	
+	try:
+		# Select profile mode
+		mySolo.set_motion_profile_mode(2) # st-curve time optimlal
+		
+		# Set parameters
+		mySolo.set_motion_profile_variable1(stCurve_maxAccel)
+		mySolo.set_motion_profile_variable2(stCurve_maxJerk)
+		
+		# Printouts
+		print("\nSet motion profile 3: st-curve time optimal")
+		print(f"Max accel = {stCurve_maxAccel} rev/s/s = {stCurve_maxAccel*60} RPM/s")
+		print(f"Max jerk {stCurve_maxJerk} rev/s/s/s = {stCurve_maxJerk*60} RPM/s/s \n")
+	
+	except Exception as e:
+		client_socket.sendall(f"Error in setting SOLO settings: {str(e)}\n".encode('utf-8'))
+
+	return
+	
 	
 # TODO: add setters for individual motor settings
 
@@ -1576,7 +1701,7 @@ def stop_motors():
 #create file folder
 def create_folder(client_socket, prefix, label, rpm_set, temp_setpoint):
 
-		#creating session folder
+	#creating session folder
 	try: 
 		session_file_path = "/home/pi/Data/" + label
 		if not os.path.exists(session_file_path):
@@ -1589,7 +1714,7 @@ def create_folder(client_socket, prefix, label, rpm_set, temp_setpoint):
 	#count number of existing melt folders
 
 	items = glob.glob(os.path.join(session_file_path, prefix+"*"))
-	print(items)
+	#print(items)
 	if len(items) == 0:
 		count = 0
 	else:
@@ -1924,6 +2049,24 @@ def handle_client_connection(client_socket):
 			elif data.startswith("get_solo_settings"):
 				get_solo_settings_client(client_socket)
 				break
+			
+			elif data.startswith("set_motor_mode_ramp"):
+				set_motor_mode_ramp(client_socket)
+				break
+			
+			elif data.startswith("set_motor_mode_st_time_based"):
+				data_list = data[28:].split(",") # stCurve_T13,stCurve_T2
+				stCurve_T13 = float(data_list[0])
+				stCurve_T2 = float(data_list[1])
+				set_motor_mode_st_time_based(client_socket,stCurve_T13,stCurve_T2)
+				break
+			elif data.startswith("set_motor_mode_st_time_optimal"):
+				data_list = data[30:].split(",") # stCurve_T13,stCurve_T2
+				stCurve_maxAccel = float(data_list[0])
+				stCurve_maxJerk = float(data_list[1])
+				set_motor_mode_st_time_optimal(client_socket,stCurve_maxAccel,stCurve_maxJerk)
+				break
+				
 			elif data.startswith("set_solo_accel"):
 				accel = data[14:]
 				set_solo_accel_client(client_socket, float(accel) )

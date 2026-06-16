@@ -18,8 +18,8 @@ import pdb
 #                          Inputs
 # ######################################################################
 
-mode = 'st_time-based'
-#mode = 'st_time_optimal'
+#mode = 'st_time-based'
+mode = 'st_time_optimal'
 
 # Note: time-based curve is much smoother
 
@@ -344,7 +344,7 @@ axs[1,1].plot(dfm.time_s, dfm.load_accel,'-k', label='Load accel')
 axs[1,1].legend()
 axs[1,1].set_ylabel("Accel (RPM/s)")
 
-# Acceleration
+# Jerk
 #axs[2,1].plot([time[0], time[-1]], [stCurve_maxJerk/gear_ratio, stCurve_maxJerk/gear_ratio], '--r', label='Max jerk')
 axs[2,1].plot(dfm.time_s, dfm.load_jerk,'-k', label='Load jerk')
 axs[2,1].legend()
