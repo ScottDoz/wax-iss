@@ -532,14 +532,14 @@ def create_setpoint_message(temp):
 
 def get_temp_and_setpoint_socket(client_socket):
 	''' Serial command to read temperature and setpoint temperature. Sleep time = 2x0.1s '''
-	global ser, temp_read_frame, setpoint_read_frame
+	global ser_cal, temp_read_frame, setpoint_read_frame
 	try:
 		# Request temperature data
-		ser.write(bytes(temp_read_frame)) #send the message to request data
+		ser_cal.write(bytes(temp_read_frame)) #send the message to request data
 		#print("sent request for temp")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		else:
 			client_socket.sendall('Temperature: no data recieved')
@@ -551,14 +551,14 @@ def get_temp_and_setpoint_socket(client_socket):
 		#print(temperature)
 
 		# Request setpoint data
-		ser.write(bytes(setpoint_read_frame)) # Send the message to request data
+		ser_cal.write(bytes(setpoint_read_frame)) # Send the message to request data
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		else:
 			client_socket.sendall('Setpoint: no data recieved')
-		#buf=ser.read(7)
+		#buf=ser_cal.read(7)
 		setpoint = ((buf[3]<<8)+buf[4])/10.0
 		#print(setpoint)
 		client_socket.sendall(f"Temperature: {temperature} Setpoint: {setpoint}".encode('utf-8'))
@@ -573,14 +573,14 @@ def get_temp_and_setpoint_socket(client_socket):
 #get cal controller temperature and setpoint without socket
 def get_temp_and_setpoint(sleep_time=.1):
 	''' Serial command to read temperature and setpoint temperature. Sleep time = 2x0.1s '''
-	global ser, temp_read_frame, setpoint_read_frame
+	global ser_cal, temp_read_frame, setpoint_read_frame
 	try:
 		# Request temperature data
-		ser.write(bytes(temp_read_frame)) #send the message to request data
+		ser_cal.write(bytes(temp_read_frame)) #send the message to request data
 		#print("sent request for temp")
 		time.sleep(sleep_time) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf1 = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf1 = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 
 		# Decode temperature response
@@ -590,12 +590,12 @@ def get_temp_and_setpoint(sleep_time=.1):
 		#print(temperature)
 
 		# Request setpoint data
-		ser.write(bytes(setpoint_read_frame)) # Send the message to request data
+		ser_cal.write(bytes(setpoint_read_frame)) # Send the message to request data
 		time.sleep(sleep_time) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf2 = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf2 = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
-		#buf=ser.read(7)
+		#buf=ser_cal.read(7)
 		setpoint = ((buf2[3]<<8)+buf2[4])/10.0
 		#print(setpoint)	
 		
@@ -608,7 +608,7 @@ def get_temp_and_setpoint(sleep_time=.1):
 
 def set_setpoint_socket(client_socket, data):
 	''' Serial command to change setpoint temperature. Sleep time = 2x0.1s '''
-	global ser
+	global ser_cal
 	index = data.find(" ")
 	temp = data[index+1:]
 	temp = int(temp)
@@ -623,56 +623,56 @@ def set_setpoint_socket(client_socket, data):
 		setpoint_message = create_setpoint_message(temp)
 		
 		# Write 1st message and return buffer
-		ser.write(first_message)
+		ser_cal.write(first_message)
 		print("sent first message (enter program mode)")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
 		# Write 2nd message and return buffer
-		ser.write(second_message)
+		ser_cal.write(second_message)
 		print("sent second message (security message)")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
-		ser.write(setpoint_message)
+		ser_cal.write(setpoint_message)
 		print("writing setpoint")
 		time.sleep(0.1)
 
-		ser.write(exit_program_mode)
+		ser_cal.write(exit_program_mode)
 		print("exiting program mode")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
-		ser.write(exit_program_mode_2nd)
+		ser_cal.write(exit_program_mode_2nd)
 		print("security byte")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
 		# Request setpoint data
-		ser.write(bytes(setpoint_read_frame)) # Send the message to request data
+		ser_cal.write(bytes(setpoint_read_frame)) # Send the message to request data
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		else:
 			print('Setpoint: no data recieved')
-		#buf=ser.read(7)
+		#buf=ser_cal.read(7)
 		setpoint = ((buf[3]<<8)+buf[4])/10.0
 		client_socket.sendall(f"new setpoint = {setpoint}".encode('utf-8'))
 	
@@ -683,7 +683,7 @@ def set_setpoint_socket(client_socket, data):
 		
 def set_setpoint(temp):
 	''' Serial command to change setpoint temperature. Sleep time = 2x0.1s '''
-	global ser
+	global ser_cal
 	try:
 		#construct serial messages
 		first_message = add_crc(bytes([0x01,0x06,0x03,0x00,0x00,0x05]))
@@ -694,56 +694,56 @@ def set_setpoint(temp):
 		setpoint_message = create_setpoint_message(temp)
 
 		# Write 1st message and return buffer
-		ser.write(first_message)
+		ser_cal.write(first_message)
 		#print("sent first message (enter program mode)")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		#else:
 			#print('Temperature: no data recieved')
 
 		# Write 2nd message and return buffer
-		ser.write(second_message)
+		ser_cal.write(second_message)
 		#print("sent second message (security message)")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		#else:
 		#	print('Temperature: no data recieved')
 
-		ser.write(setpoint_message)
+		ser_cal.write(setpoint_message)
 		#print("writing setpoint")
 		time.sleep(0.1)
 
-		ser.write(exit_program_mode)
+		ser_cal.write(exit_program_mode)
 		#print("exiting program mode")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		#else:
 			#print('Temperature: no data recieved')
 
-		ser.write(exit_program_mode_2nd)
+		ser_cal.write(exit_program_mode_2nd)
 		#print("security byte")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		#else:
 		#	print('Temperature: no data recieved')
 
 		# Request setpoint data
-		ser.write(bytes(setpoint_read_frame)) # Send the message to request data
+		ser_cal.write(bytes(setpoint_read_frame)) # Send the message to request data
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		#else:
 		#	print('Setpoint: no data recieved')
-		#buf=ser.read(7)
+		#buf=ser_cal.read(7)
 		setpoint = ((buf[3]<<8)+buf[4])/10.0
 		#client_socket.sendall(f"new setpoint = {setpoint}".encode('utf-8'))
 	
@@ -754,7 +754,7 @@ def set_setpoint(temp):
 		
 		
 def set_setpoint_melt(client_socket, setpoint):
-	global ser
+	global ser_cal
 	temp = int(setpoint)
 	print(temp)
 	try:
@@ -768,55 +768,55 @@ def set_setpoint_melt(client_socket, setpoint):
 
 	
 	
-		ser.write(first_message)
+		ser_cal.write(first_message)
 		print("sent first message (enter program mode)")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
-		ser.write(second_message)
+		ser_cal.write(second_message)
 		print("sent second message (security message)")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
-		ser.write(setpoint_message)
+		ser_cal.write(setpoint_message)
 		print("writing setpoint")
 		time.sleep(0.1)
 
-		ser.write(exit_program_mode)
+		ser_cal.write(exit_program_mode)
 		print("exiting program mode")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
-		ser.write(exit_program_mode_2nd)
+		ser_cal.write(exit_program_mode_2nd)
 		print("security byte")
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			print('recieved: ',buf.hex())
 		else:
 			print('Temperature: no data recieved')
 
 		# Request setpoint data
-		ser.write(bytes(setpoint_read_frame)) # Send the message to request data
+		ser_cal.write(bytes(setpoint_read_frame)) # Send the message to request data
 		time.sleep(0.1) #wait 0.1 seconds
-		if ser.in_waiting>0:
-			buf = ser.read(ser.in_waiting) #read all available bytes
+		if ser_cal.in_waiting>0:
+			buf = ser_cal.read(ser_cal.in_waiting) #read all available bytes
 			#print('recieved: ',buf.hex())
 		else:
 			print('Setpoint: no data recieved')
-		#buf=ser.read(7)
+		#buf=ser_cal.read(7)
 		setpoint = ((buf[3]<<8)+buf[4])/10.0
 		client_socket.sendall(f"new setpoint = {setpoint}".encode('utf-8'))
 	
@@ -2062,7 +2062,7 @@ def melt_server_program():
 	global CAL_recording, CAL_is_running, CAL_file_path, timestep_CAL
 	global motor_file_path, motor_recording, timestep_motor
 	global spy_temp, stime, timestep_melt  
-	global temp_read_frame, setpoint_read_frame, t0, temp_crc, ser
+	global temp_read_frame, setpoint_read_frame, t0, temp_crc, ser_cal
 	global mySolo # SOLO motor driver instance
 	global spy_motor_flag, gear_ratio, rpm_limit
 	
@@ -2150,8 +2150,8 @@ def melt_server_program():
 	temp_crc = add_crc(bytes([0x01,0x03,0x00,0x1C,0x00,0x01]))
 	t0=time.time()
 	
-	# Set serial port fpr cal controller
-	ser=serial.Serial(
+	# Set serial port for cal controller
+	ser_cal=serial.Serial(
 		port='/dev/ttyUSB0', # Serial port /dev/ttyUSB0
 		baudrate=9600,       # Data rate
 		bytesize=serial.EIGHTBITS,      # Data bits
@@ -2160,7 +2160,7 @@ def melt_server_program():
 		timeout=1, # Timeout (s)
 	)
 
-	ser.flush() #clear any junk data 
+	ser_cal.flush() #clear any junk data 
 	
 	#Set serial port for telemetry downlink
 	#telem = serial.Serial(port ='/dev/ttyUSB1', baudrate=115200) #open serial port
