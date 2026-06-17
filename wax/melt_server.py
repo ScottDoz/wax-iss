@@ -416,6 +416,10 @@ def start_log_thermocouple_client(client_socket):
 	global thermocouple_file_path,stime, timestep_thermocouple, thermocouple, thermocouple2, exper_file
 	# global thermocouple_recording
 	
+	# Telemetry parameters
+	telem_interval = 5. # Telemetry time interval (s)
+	last_trigger = 0.   # Last trigger time (s)
+	
 	try:
 		client_socket.sendall(f"Starting thermocouple log. Timestep = {timestep_thermocouple}".encode('utf-8'))
 	except:
@@ -451,6 +455,12 @@ def start_log_thermocouple_client(client_socket):
 				#file.write("Time {:.2f} s Temp1: {:.2f} Temp2: {:.2f}\n".format(t,temp,temp2))
 				writer.writerow([round(t,3), round(temp,3), round(temp2,3)])
 				file.flush()
+				
+				# Send telemetry every 5 seconds
+				if t >= last_trigger + telem_interval:
+					# Time just crossed 5s interval. Send telemetry.
+					print(f"T={t:.2f} sending thermocouple telemetry")
+					last_trigger += telem_interval # Increment last trigger time
 				
 				# Sleep
 				time.sleep(timestep_thermocouple)
@@ -612,6 +622,15 @@ def set_setpoint_socket(client_socket, data):
 	index = data.find(" ")
 	temp = data[index+1:]
 	temp = int(temp)
+	
+	# Safety handling
+	max_temp_limit = 120.0 # Maximum temperaure
+	if temp>max_temp_limit:
+		print("WARNING: Could not change setpoint. Requested setpoint temperuare exceeds max temperature.")
+		client_socket.sendall(f"WARNING: Could not change setpoint. Requested setpoint temperuare exceeds max temperature.".encode('utf-8'))
+		temp = max_temp_limit # Limit just incase it continues
+		return
+	
 	print(temp)
 	try:
 		#construct serial messages
@@ -840,6 +859,10 @@ def start_log_CAL_client(client_socket):
 	global CAL_recording
 	
 	
+	# Telemetry parameters
+	telem_interval = 5. # Telemetry time interval (s)
+	last_trigger = 0.   # Last trigger time (s)
+	
 	try:
 		client_socket.sendall(f"Starting CAL log. Timestep = {timestep_CAL}".encode('utf-8'))
 	except:
@@ -872,6 +895,12 @@ def start_log_CAL_client(client_socket):
 				#file.write("Time {:.2f} s Temp: {:.2f} Setpoint: {:.2f}\n".format(t,temp_cal,setpoint))
 				writer.writerow([round(t,3), round(temp_cal,3), round(setpoint,3)])
 				file.flush()
+				
+				# Send telemetry every 5 seconds
+				if t >= last_trigger + telem_interval:
+					# Time just crossed 5s interval. Send telemetry.
+					print(f"T={t:.2f} sending CAL telemetry")
+					last_trigger += telem_interval # Increment last trigger time
 				
 				# Sleep
 				time.sleep(timestep_CAL)
@@ -1456,10 +1485,18 @@ def start_log_motor_client(client_socket):
 	global mySolo
 	global motor_file_path, stime, timestep_motor, exper_file
 	global motor_recording
+	# Global variables for telemetry
+	global telem_M_t, telem_M_motor_speed, telem_M_rpm_setpoint, telem_M_motor_Iq
+	
+	# NOTE: only write motor parameters. Can re-construct load-side parameters in post processing
 	
 	# Motor parameters
 	gear_ratio = 23.76 # Gear ratio
 	kt = 5.9e-3 # Motor torque constant (N.m/A) 5.9 mN.m/A = 5.9e-3 N.m/A for Faulhaber 2264 BP4
+	
+	# Telemetry parameters
+	telem_interval = 5. # Telemetry time interval (s)
+	last_trigger = 0.   # Last trigger time (s)
 
 	try:
 		
@@ -1481,7 +1518,8 @@ def start_log_motor_client(client_socket):
 			writer = csv.writer(file, delimiter=',')
 			
 			# Write header
-			writer.writerow(["time_s","load_speed","motor_speed","ref_motor_speed","iq","motor_torque","load_torque"])
+			#writer.writerow(["time_s","load_speed","motor_speed","ref_motor_speed","iq","motor_torque","load_torque"]) # Full log
+			writer.writerow(["time_s","motor_speed","ref_motor_speed","motor_iq"]) # Only motor parameters
 		
 			# Time loop
 			while not stop_log_motor_event.is_set(): # while motor_recording:
@@ -1500,9 +1538,20 @@ def start_log_motor_client(client_socket):
 				t = (time.perf_counter()-stime)
 				
 				# Write to file
-				#file.write("Time {:.2f} s Shaft speed: {:.2f}, Motor speed: {:.2f}, Ref motor speed: {:.2f}\n".format(t,motor_speed/gear_ratio, motor_speed, rpm_setpoint))
-				writer.writerow([round(t,3), round(load_speed,3), round(motor_speed,3), round(rpm_setpoint,3), round(motor_Iq,6), round(motor_torque,6), round(load_torque,6)])
+				#writer.writerow([round(t,3), round(load_speed,3), round(motor_speed,3), round(rpm_setpoint,3), round(motor_Iq,6), round(motor_torque,6), round(load_torque,6)]) # Full log
+				writer.writerow([round(t,3), round(motor_speed,3), round(rpm_setpoint,3), round(motor_Iq,6)])
 				file.flush()
+				
+				# Send telemetry every 5 seconds
+				if t >= last_trigger + telem_interval:
+					# Time just crossed 5s interval. Update telemetry.
+					telem_M_t = t
+					telem_M_motor_speed = motor_speed
+					telem_M_rpm_setpoint = rpm_setpoint
+					telem_M_motor_Iq = motor_Iq
+					print(f"T={t:.2f} sending motor telemetry")
+					
+					last_trigger += telem_interval # Increment last trigger time
 				
 				# Timestep
 				time.sleep(timestep_motor)
@@ -1746,9 +1795,6 @@ def start_log_data(client_socket):
 	
 	# Stop log events
 	
-
-	
-	
 	# Log data from components in separate threads
 	# 1. Thermocouple
 	# 2. Motor
@@ -1842,13 +1888,13 @@ def start_log_exp(client_socket, label, prefix, rpm_set, temp_setpoint, camera_p
 	
 	stime = time.perf_counter() # Start common start time for data log
 	
-	#create the experiment folder
+	# create the experiment folder
 	exper_folder = create_folder(client_socket, prefix, label, rpm_set, temp_setpoint) 
 	
-	#turn on lights
+	# turn on lights
 	light_set_color([250,250,250])
 	
-	#start camera recording
+	# start camera recording
 	try:
 		start_recording(client_socket, preview=camera_preview)
 	except:

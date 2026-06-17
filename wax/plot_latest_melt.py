@@ -23,8 +23,9 @@ print(exper_folder)
 motor_file_path = os.path.join(exper_folder, "motor_log.csv")
 cal_file_path = os.path.join(exper_folder, "CAL_log.csv")
 
-
+# Motor parameters
 gear_ratio = 23.76 # Gear ratio
+kt = 5.9e-3 # Motor torque constant (N.m/A) 5.9 mN.m/A = 5.9e-3 N.m/A for Faulhaber 2264 BP4
 
 # Scaling functions
 def motor_to_load(m):
@@ -36,6 +37,11 @@ def load_to_motor(l):
 # Read data
 dfm = pd.read_csv(motor_file_path) # Motor data
 dfcal = pd.read_csv(cal_file_path) # CAL data
+
+# Compute load-side parameters
+dfm['load_speed'] = dfm.motor_speed/gear_ratio # Load speed (RPM)
+dfm['motor_torque'] = dfm.motor_iq*kt          # Motor torque (N.m)
+dfm['load_torque'] = dfm.motor_torque*gear_ratio # Load torque (N.m)
 
 # Compute acceleration and jerk
 dfm['load_accel'] = np.gradient(dfm.load_speed, dfm.time_s) # Load accel (RPM/s)
