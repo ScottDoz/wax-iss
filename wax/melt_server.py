@@ -58,11 +58,13 @@ import adafruit_max31865
 stop_log_motor_event = threading.Event()
 stop_log_thermo_event = threading.Event()
 stop_log_cal_event = threading.Event()
+stop_telemetry_event = threading.Event()
 
 # Thread handles
 log_motor_thread = None
 log_thermo_thread = None
 log_cal_thread = None
+telemetry_thread = None
 
 
 
@@ -415,6 +417,7 @@ def start_log_thermocouple_client(client_socket):
 	''' Log thermocouple temprature data to a txt file '''
 	global thermocouple_file_path,stime, timestep_thermocouple, thermocouple, thermocouple2, exper_file
 	# global thermocouple_recording
+	global telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2
 	
 	# Telemetry parameters
 	telem_interval = 5. # Telemetry time interval (s)
@@ -458,8 +461,12 @@ def start_log_thermocouple_client(client_socket):
 				
 				# Send telemetry every 5 seconds
 				if t >= last_trigger + telem_interval:
-					# Time just crossed 5s interval. Send telemetry.
-					print(f"T={t:.2f} sending thermocouple telemetry")
+					# Time just crossed 5s interval. Update telemetry.sending
+					telem_thermo_t = t
+					telem_thermo_temp1 = temp
+					telem_thermo_temp2 = temp2
+					#print(f"T={t:.2f} sending thermocouple telemetry")
+					
 					last_trigger += telem_interval # Increment last trigger time
 				
 				# Sleep
@@ -857,6 +864,8 @@ def start_log_CAL_client(client_socket):
 	''' Log CAL temperature controller ata to a txt file '''
 	global CAL_file_path, stime, timestep_CAL, exper_file
 	global CAL_recording
+	# Global variables for telemetry
+	global telem_CAL_t, telem_CAL_temp, telem_CAL_setpoint
 	
 	
 	# Telemetry parameters
@@ -898,8 +907,12 @@ def start_log_CAL_client(client_socket):
 				
 				# Send telemetry every 5 seconds
 				if t >= last_trigger + telem_interval:
-					# Time just crossed 5s interval. Send telemetry.
-					print(f"T={t:.2f} sending CAL telemetry")
+					# Time just crossed 5s interval. Update telemetry.
+					telem_CAL_t = t
+					telem_CAL_temp = temp_cal
+					telem_CAL_setpoint = setpoint
+					#print(f"T={t:.2f} sending CAL telemetry")
+					
 					last_trigger += telem_interval # Increment last trigger time
 				
 				# Sleep
@@ -1486,7 +1499,7 @@ def start_log_motor_client(client_socket):
 	global motor_file_path, stime, timestep_motor, exper_file
 	global motor_recording
 	# Global variables for telemetry
-	global telem_M_t, telem_M_motor_speed, telem_M_rpm_setpoint, telem_M_motor_Iq
+	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq
 	
 	# NOTE: only write motor parameters. Can re-construct load-side parameters in post processing
 	
@@ -1545,11 +1558,11 @@ def start_log_motor_client(client_socket):
 				# Send telemetry every 5 seconds
 				if t >= last_trigger + telem_interval:
 					# Time just crossed 5s interval. Update telemetry.
-					telem_M_t = t
-					telem_M_motor_speed = motor_speed
-					telem_M_rpm_setpoint = rpm_setpoint
-					telem_M_motor_Iq = motor_Iq
-					print(f"T={t:.2f} sending motor telemetry")
+					telem_motor_t = t
+					telem_motor_motor_speed = motor_speed
+					telem_motor_rpm_setpoint = rpm_setpoint
+					telem_motor_motor_Iq = motor_Iq
+					#print(f"T={t:.2f} sending motor telemetry")
 					
 					last_trigger += telem_interval # Increment last trigger time
 				
@@ -1783,15 +1796,86 @@ def create_folder(client_socket, prefix, label, rpm_set, temp_setpoint):
 		print("created folder:", exper_folder)
 	return exper_folder
 
+# ######################################################################
+# TELEMETRY
+# ######################################################################
+
+def start_telemetry_client(client_socket):
+	''' Start sending telemetry through flight computer '''
+	global stime
+	
+	# Get access to global variables storing telemetry
+	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq # Motor
+	global telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2 # Thermocouple
+	global telem_CAL_t, telem_CAL_temp, telem_CAL_setpoint
+	
+	# Telemetry parameters
+	telem_interval = 5. # Telemetry time interval (s)
+	last_trigger = 0.   # Last trigger time (s)
+	
+	# TODO: setup serial link
+	
+	
+	
+	try:
+		
+		# Time loop
+		while not stop_telemetry_event.is_set(): #while CAL_recording:
+			
+			# Get time
+			t = (time.perf_counter()-stime)
+			
+			# Print values
+			
+			
+			# TODO: Monitor telem_motor_t, telem_thermo_t, telem_CAL_t
+			# Detect when each of them have updated to current time interval
+			# Then format and send telemetry
+
+			# Send telemetry every 5 seconds
+			if t >= last_trigger + telem_interval + 1:
+				# Time just crossed 5s interval. Update telemetry.
+				print(f"\nT={t:.2f} sending telemetry!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+				print(f"Motor Telemetry:  t={telem_motor_t:.2f}, motor_speed={telem_motor_motor_speed:.2f}")
+				print(f"CAL Telemetry:    t={telem_CAL_t:.2f}, temp={telem_CAL_temp:.2f}, setpoint={telem_CAL_setpoint:.2f}")
+				print(f"Thermo Telemetry: t={telem_thermo_t:.2f}, temp1={telem_thermo_temp1:.2f}, temp2={telem_thermo_temp2:.2f}")
+				last_trigger += telem_interval # Increment last trigger time
+			
+			# Sleep
+			time.sleep(0.1)
+			
+		print("Ended telemetry")
+	except Exception as e:
+                client_socket.sendall(f"Error in starting log: {str(e)}\n".encode('utf-8'))
+	finally:
+		#file.close()
+		print("Final") # TODO: add final exit here
+	
+	return
+
+def stop_ltelemetry(client_socket):
+	''' Stop sending telemetry '''
+	
+	if stop_telemetry_event.is_set():
+		client_socket.sendall(b"Alread stopped telemetry\n")
+		return
+	try:
+		stop_telemetry_event.set()
+		print("Telemetry stop signal sent")
+		#client_socket.sendall(b"Stopping telemetry")
+	except Exception as e:
+		client_socket.sendall(f"Error in stopping telemetry: {str(e)}\n".encode('utf-8'))
+
 
 # ######################################################################
-# LOGGING 
+# LOGGING
 # ######################################################################
 
 def start_log_data(client_socket):
 	''' Start logging of data to file. Thermometer, CAL, motor '''
 	
 	global log_motor_thread, log_thermo_thread, log_cal_thread # Thread handles
+	global telemetry_thread
 	
 	# Stop log events
 	
@@ -1809,6 +1893,7 @@ def start_log_data(client_socket):
 	stop_log_motor_event.clear()
 	stop_log_thermo_event.clear()
 	stop_log_cal_event.clear()
+	stop_telemetry_event.clear()
 	
 	# Create threads to log data separately
 	log_thermo_thread = threading.Thread(
@@ -1829,10 +1914,19 @@ def start_log_data(client_socket):
 		daemon=True
 	)
 	
+	# Telemetry thread
+	telemetry_thread = threading.Thread(
+		target=start_telemetry_client,
+		args=(client_socket,),
+		daemon=True
+	)
+	
 	# Start the threads
 	log_thermo_thread.start()
 	log_cal_thread.start()
 	log_motor_thread.start()
+	telemetry_thread.start()
+	
 	
 	print("Data logging started.")
 	
@@ -1845,6 +1939,7 @@ def stop_log_data(client_socket):
 	stop_log_motor_event.set()
 	stop_log_thermo_event.set()
 	stop_log_cal_event.set()
+	stop_telemetry_event.set()
 	
 	# Optional: wait for therads to finish cleanly
 	if log_thermo_thread is not None:
@@ -1853,6 +1948,8 @@ def stop_log_data(client_socket):
 		log_cal_thread.join(timeout=2)
 	if log_motor_thread is not None:
 		log_motor_thread.join(timeout=2)
+	if telemetry_thread is not None:
+		telemetry_thread.join(timeout=2)
 	
 	print("Stopped loggin data.")
 	
@@ -2256,6 +2353,14 @@ def melt_server_program():
 	global spy_motor_flag, gear_ratio, rpm_limit
 	
 	global exper_folder, melt_running, experiment_rpm_setpoint
+	
+	# Telemetry variables
+	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq # Motor
+	global telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2 # Thermocouple
+	global telem_CAL_t, telem_CAL_temp, telem_CAL_setpoint # CAL controller
+	telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq = 0,0,0,0
+	telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2 = 0,0,0
+	telem_CAL_t, telem_CAL_temp, telem_CAL_setpoint = 0,0,0
 	
 	#overall setup
 	is_running = True
