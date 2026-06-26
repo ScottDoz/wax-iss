@@ -1851,6 +1851,7 @@ def start_telemetry_client(client_socket):
 				telem_string = (f'\"time_M\":{telem_motor_t:.2f},\"load_speed\":{load_speed:.2f},\"load_setpoint\":{load_setpoint:.2f},\"load_torque\":{load_torque:.2f},\"motor_iq\":{telem_motor_motor_Iq:.2f}'
 								f',\"time_CAL\":{telem_CAL_t:.2f},\"CAL_temp\":{telem_CAL_temp:.2f},\"CAL_setpoint\":{telem_CAL_setpoint:.2f}'
 								f',\"time_THERMO\":{telem_thermo_t:.2f},\"THERMO_temp1\":{telem_thermo_temp1:.2f},\"THERMO_temp2\":{telem_thermo_temp2:.2f}'
+								f'\n'
 				)
 				
 				# Encode the string

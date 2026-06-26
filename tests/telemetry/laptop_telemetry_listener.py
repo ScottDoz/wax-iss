@@ -15,15 +15,28 @@ laptop_port = serial.Serial(
 
 # Try sen
 try:
+
+	# Intialize received buffer
+	rx_buffer = b''
+
 	while True:
 		
 		# Read incoming data (if any)
 		#print("Waiting status: ", laptop_port.in_waiting)
 		if laptop_port.in_waiting > 0:
-			data = laptop_port.read(laptop_port.in_waiting)
-			print(f"Received from Pi. Paket size = {len(repr(data))}")
-			print(repr(data))
-			print('')
+			rx_buffer += laptop_port.read(laptop_port.in_waiting)
+
+			while b'\n' in rx_buffer:
+            	line, rx_buffer = rx_buffer.split(b'\n', 1)
+
+				print(f"Received from Pi. Paket size = {len(repr(line))}")
+				print(line.decode('utf-8'))
+				print('')
+
+			#data = laptop_port.read(laptop_port.in_waiting)
+			# print(f"Received from Pi. Paket size = {len(repr(data))}")
+			# print(repr(data))
+			# print('')
 		
 		# Send reply
 		#message = "Laptop received your message!\n"
