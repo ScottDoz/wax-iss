@@ -1802,12 +1802,16 @@ def create_folder(client_socket, prefix, label, rpm_set, temp_setpoint):
 
 def start_telemetry_client(client_socket):
 	''' Start sending telemetry through flight computer '''
-	global stime
+	global stime, ser_telem
 	
 	# Get access to global variables storing telemetry
 	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq # Motor
 	global telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2 # Thermocouple
 	global telem_CAL_t, telem_CAL_temp, telem_CAL_setpoint
+	
+	# Motor parameters
+	gear_ratio = 23.76 # Gear ratio
+	kt = 5.9e-3 # Motor torque constant (N.m/A) 5.9 mN.m/A = 5.9e-3 N.m/A for Faulhaber 2264 BP4
 	
 	# Telemetry parameters
 	telem_interval = 5. # Telemetry time interval (s)
@@ -1835,10 +1839,33 @@ def start_telemetry_client(client_socket):
 			# Send telemetry every 5 seconds
 			if t >= last_trigger + telem_interval + 1:
 				# Time just crossed 5s interval. Update telemetry.
+				
+				# Calculations
+				motor_torque = telem_motor_motor_Iq*kt # Motor torque (N.m)
+				load_torque = motor_torque*gear_ratio  # Load torque (N.m)
+				load_speed = telem_motor_motor_speed/gear_ratio # Load speed (RPM)
+				load_setpoint = telem_motor_rpm_setpoint/gear_ratio # Load setpoint (RPM)
+				
+				# Form dictionary
+				#telem_string = b'\"time_M\":98.3,\"name1\":98.3 ' # Test string from SpaceTango document
+				telem_string = (f'\"time_M\":{telem_motor_t:.2f},\"load_speed\":{load_speed:.2f},\"load_setpoint\":{load_setpoint:.2f},\"load_torque\":{load_torque:.2f},\"motor_iq\":{telem_motor_motor_Iq:.2f}'
+								f',\"time_CAL\":{telem_CAL_t:.2f},\"CAL_temp\":{telem_CAL_temp:.2f},\"CAL_setpoint\":{telem_CAL_setpoint:.2f}'
+								f',\"time_THERMO\":{telem_thermo_t:.2f},\"THERMO_temp1\":{telem_thermo_temp1:.2f},\"THERMO_temp2\":{telem_thermo_temp2:.2f}'
+				)
+				
+				# Encode the string
+				telem_string = telem_string.encode()
+				
+				# Send serial message
+				ser_telem.write(telem_string)
+				
+				
 				print(f"\nT={t:.2f} sending telemetry!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-				print(f"Motor Telemetry:  t={telem_motor_t:.2f}, motor_speed={telem_motor_motor_speed:.2f}")
+				print(f"Motor Telemetry:  t={telem_motor_t:.2f}, load_speed={telem_motor_motor_speed/gear_ratio:.2f}")
 				print(f"CAL Telemetry:    t={telem_CAL_t:.2f}, temp={telem_CAL_temp:.2f}, setpoint={telem_CAL_setpoint:.2f}")
 				print(f"Thermo Telemetry: t={telem_thermo_t:.2f}, temp1={telem_thermo_temp1:.2f}, temp2={telem_thermo_temp2:.2f}")
+				print("telemetry_string:")
+				print(telem_string)
 				last_trigger += telem_interval # Increment last trigger time
 			
 			# Sleep
@@ -2348,7 +2375,7 @@ def melt_server_program():
 	global CAL_recording, CAL_is_running, CAL_file_path, timestep_CAL
 	global motor_file_path, motor_recording, timestep_motor
 	global spy_temp, stime, timestep_melt  
-	global temp_read_frame, setpoint_read_frame, t0, temp_crc, ser_cal
+	global temp_read_frame, setpoint_read_frame, t0, temp_crc, ser_cal, ser_telem
 	global mySolo # SOLO motor driver instance
 	global spy_motor_flag, gear_ratio, rpm_limit
 	
@@ -2435,7 +2462,7 @@ def melt_server_program():
 	reset_solo_settings()
 	
 	
-	#cal controller setup
+	# CAL controller setup
 	# Set the serial hexadecimal message to request temperature and setpoint data
 	temp_read_frame =     [0x01,0x03,0x00,0x1C,0x00,0x01,0x45,0xCC] #request frame for temperature
 	setpoint_read_frame = [0x01,0x03,0x00,0x7F,0x00,0x01,0xB5,0xD2] #request frame for setpoint temperature
@@ -2453,7 +2480,6 @@ def melt_server_program():
 		parity = serial.PARITY_NONE,    # Parity
 		timeout=1, # Timeout (s)
 	)
-
 	ser_cal.flush() #clear any junk data 
 	
 	#Set serial port for telemetry downlink
@@ -2461,6 +2487,17 @@ def melt_server_program():
 	#print(telem.name()) #check which port was really used
 	#telem.write(b'\"Temperature1\":98.3,\"experiment_time\":10.45') #write a string
 	#telem.close() #close port
+	
+	# ~ # Define serial connection
+	ser_telem = serial.Serial(
+		port='/dev/ttyUSB1',
+		baudrate=115200, # Data rate (from SpaceTango ICD document)
+		parity=serial.PARITY_NONE,
+		stopbits=serial.STOPBITS_ONE,
+		bytesize=serial.EIGHTBITS,
+		timeout=1,
+	)
+	ser_telem.flush() #clear any junk data 
 	
 	
 	#server info

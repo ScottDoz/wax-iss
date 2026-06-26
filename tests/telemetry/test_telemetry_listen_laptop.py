@@ -1,7 +1,6 @@
 '''
 Test script for Laptop
-Listen for messages from Pi.
-Reply to confirm receipt of message.
+Listen for telemetry messages from Pi.
 
 '''
 import serial
@@ -26,18 +25,18 @@ try:
 			print("Received from Pi: HEX: ", data.hex())
 		
 		# Send reply
-		message = "Laptop received your message!\n"
-		laptop_port.write(message.encode('utf-8'))
-		print(f"Send: {message.strip()}")
+		#message = "Laptop received your message!\n"
+		#laptop_port.write(message.encode('utf-8'))
+		#print(f"Send: {message.strip()}")
 		
 		time.sleep(0.1)
 
 except KeyboardInterrupt:
 	
 	# Send reply
-	message = "Stopped listening. Goodbye!\n"
-	laptop_port.write(message.encode('utf-8'))
-	print(f"Send: {message.strip()}")
+	#message = "Stopped listening. Goodbye!\n"
+	#laptop_port.write(message.encode('utf-8'))
+	#print(f"Send: {message.strip()}")
 	
 	time.sleep(1)
 	

@@ -2,6 +2,10 @@
 Test script for sending telemetry from Pi
 Send a message every second. Print received messages.
 
+
+To get port number, run
+ls -l /dev/serial/by-id/
+
 '''
 
 import serial
@@ -10,7 +14,7 @@ import time
 # Define serial connection
 serial_port = serial.Serial(
 	port='/dev/ttyUSB1',
-	baudrate=9600,
+	baudrate=115200, # Data rate (from SpaceTango ICD document)
 	parity=serial.PARITY_NONE,
 	stopbits=serial.STOPBITS_ONE,
 	bytesize=serial.EIGHTBITS,
