@@ -21,7 +21,7 @@ try:
 		#print("Waiting status: ", laptop_port.in_waiting)
 		if laptop_port.in_waiting > 0:
 			data = laptop_port.read(laptop_port.in_waiting)
-			print("Received from Pi. RAW: ")
+			print(f"Received from Pi. Paket size = {len(repr(data))}")
 			print(repr(data))
 			print('')
 		
