@@ -21,8 +21,9 @@ try:
 		#print("Waiting status: ", laptop_port.in_waiting)
 		if laptop_port.in_waiting > 0:
 			data = laptop_port.read(laptop_port.in_waiting)
-			print("Received from Pi. RAW: ", repr(data))
-			#print("Received from Pi: HEX: ", data.hex())
+			print("Received from Pi. RAW: ")
+			print(repr(data))
+			print('')
 		
 		# Send reply
 		#message = "Laptop received your message!\n"
