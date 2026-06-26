@@ -27,7 +27,7 @@ try:
 			rx_buffer += laptop_port.read(laptop_port.in_waiting)
 
 			while b'\n' in rx_buffer:
-            	line, rx_buffer = rx_buffer.split(b'\n', 1)
+				line, rx_buffer = rx_buffer.split(b'\n', 1)
 
 				print(f"Received from Pi. Paket size = {len(repr(line))}")
 				print(line.decode('utf-8'))
