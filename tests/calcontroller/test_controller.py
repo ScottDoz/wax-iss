@@ -43,11 +43,19 @@ temp_crc = add_crc(bytes([0x01,0x03,0x00,0x1C,0x00,0x01]))
 
 
 
+#version = 'MIT'
+version = 'flight'
 
 
 # Set serial port
+if version == 'MIT':
+	CAL_port = '/dev/ttyUSB1'
+elif version == 'flight':
+	CAL_port = '/dev/ttyAMC1'
+
+# Set serial port
 ser=serial.Serial(
-	port='/dev/ttyUSB0', # Serial port
+	port=CAL_port, # Serial port
 	baudrate=9600,       # Data rate
 	bytesize=serial.EIGHTBITS,      # Data bits
 	stopbits =serial.STOPBITS_ONE,  # Stop bits

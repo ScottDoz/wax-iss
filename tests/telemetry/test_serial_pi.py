@@ -11,9 +11,14 @@ ls -l /dev/serial/by-id/
 import serial
 import time
 
+
+
+# Set serial port
+
+
 # Define serial connection
 serial_port = serial.Serial(
-	port='/dev/ttyUSB1',
+	port='/dev/ttyUSB0',
 	baudrate=115200, # Data rate (from SpaceTango ICD document)
 	parity=serial.PARITY_NONE,
 	stopbits=serial.STOPBITS_ONE,

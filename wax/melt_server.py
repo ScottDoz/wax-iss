@@ -2473,8 +2473,17 @@ def melt_server_program():
 	t0=time.time()
 	
 	# Set serial port for cal controller
+	# FIXME: move this somewhere else
+	#version = 'MIT'
+	version = 'flight'
+	# Set serial port
+	if version == 'MIT':
+		CAL_port = '/dev/ttyUSB1'
+	elif version == 'flight':
+		CAL_port = '/dev/ttyAMC1'
+	
 	ser_cal=serial.Serial(
-		port='/dev/ttyUSB0', # Serial port /dev/ttyUSB0
+		port=CAL_port, # Serial port /dev/ttyUSB0
 		baudrate=9600,       # Data rate
 		bytesize=serial.EIGHTBITS,      # Data bits
 		stopbits =serial.STOPBITS_ONE,  # Stop bits
@@ -2491,7 +2500,7 @@ def melt_server_program():
 	
 	# ~ # Define serial connection
 	ser_telem = serial.Serial(
-		port='/dev/ttyUSB1',
+		port='/dev/ttyUSB0',
 		baudrate=115200, # Data rate (from SpaceTango ICD document)
 		parity=serial.PARITY_NONE,
 		stopbits=serial.STOPBITS_ONE,
