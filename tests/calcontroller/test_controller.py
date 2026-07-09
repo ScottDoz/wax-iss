@@ -51,7 +51,7 @@ version = 'flight'
 if version == 'MIT':
 	CAL_port = '/dev/ttyUSB1'
 elif version == 'flight':
-	CAL_port = '/dev/ttyAMC1'
+	CAL_port = '/dev/ttyACM1'
 
 # Set serial port
 ser=serial.Serial(
