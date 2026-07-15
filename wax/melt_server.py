@@ -37,6 +37,7 @@ import glob
 import numpy as np
 import pandas as pd
 import csv
+import configparser
 
 #import pigpio
 import rotary_encoder
@@ -2394,6 +2395,12 @@ def melt_server_program():
 	is_running = True
 	melt_running = False
 	
+	
+	# Read config parser
+	config = configparser.ConfigParser()
+	config.read('config.ini')
+	version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
+	
 	# Temporary data folder (when not running experiments)
 	exper_folder = "/home/pi/Data" # default temporary data folder when not running experiment
 	
@@ -2473,14 +2480,15 @@ def melt_server_program():
 	t0=time.time()
 	
 	# Set serial port for cal controller
-	# FIXME: move this somewhere else
+	CAL_port = config['serialports']['CAL_port'] # Read from config file
 	#version = 'MIT'
-	version = 'flight'
+	#version = 'flight'
 	# Set serial port
-	if version == 'MIT':
-		CAL_port = '/dev/ttyUSB1'
-	elif version == 'flight':
-		CAL_port = '/dev/ttyACM1'
+	#if version == 'MIT':
+	#	CAL_port = '/dev/ttyUSB1'
+	#elif version == 'flight':
+	#	CAL_port = '/dev/ttyACM1'
+	#CAL_port = '/dev/ttyUSB1'
 	
 	ser_cal=serial.Serial(
 		port=CAL_port, # Serial port /dev/ttyUSB0
