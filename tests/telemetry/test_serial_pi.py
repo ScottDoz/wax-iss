@@ -10,7 +10,23 @@ ls -l /dev/serial/by-id/
 
 import serial
 import time
+import configparser
 
+
+# Read config parser
+config = configparser.ConfigParser()
+config.read(r'/home/pi/wax-iss/wax/config.ini')
+#print("Config files read:", files)
+print("Config sections: ", config.sections())
+#version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
+CAL_port = config['serialports']['CAL_port'] # Read from config file
+SOLO_port = config['serialports']['SOLO_port'] # Read from config file
+TELEM_port = config['serialports']['TELEM_port'] # Read from config file
+#SOLO_port = "/dev/ttyACM0"
+print("CAL_port: ", CAL_port)
+print("SOLO_port: ", SOLO_port)
+print("TELEM_port: ", TELEM_port)
+print("")
 
 
 # Set serial port
@@ -18,7 +34,7 @@ import time
 
 # Define serial connection
 serial_port = serial.Serial(
-	port='/dev/ttyUSB0',
+	port=TELEM_port,
 	baudrate=115200, # Data rate (from SpaceTango ICD document)
 	parity=serial.PARITY_NONE,
 	stopbits=serial.STOPBITS_ONE,

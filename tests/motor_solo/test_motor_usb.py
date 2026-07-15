@@ -8,6 +8,7 @@
 
 import SoloPy as solo
 import time
+import configparser
 
 
 # INPUTS
@@ -17,12 +18,25 @@ speedDecelValue = 5.0 # Speed deceleration value (rev/s/s)
 target_speed_shaft = 100. # Load speed (RPM)
 # ---------------------------------------------------------
 
-
+# Read config parser
+config = configparser.ConfigParser()
+config.read(r'/home/pi/wax-iss/wax/config.ini')
+#print("Config files read:", files)
+print("Config sections: ", config.sections())
+#version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
+CAL_port = config['serialports']['CAL_port'] # Read from config file
+SOLO_port = config['serialports']['SOLO_port'] # Read from config file
+TELEM_port = config['serialports']['TELEM_port'] # Read from config file
+#SOLO_port = "/dev/ttyACM0"
+print("CAL_port: ", CAL_port)
+print("SOLO_port: ", SOLO_port)
+print("TELEM_port: ", TELEM_port)
+print("")
 
 # Instanciate a SOLO object:
 # check with SOLO motion terminal that you are able to connect to your device 
 # and make sure the port name in the code is the correct one 
-mySolo = solo.SoloMotorControllerUart("/dev/ttyACM0", 0, solo.UartBaudRate.RATE_937500)
+mySolo = solo.SoloMotorControllerUart(SOLO_port, 0, solo.UartBaudRate.RATE_937500)
 
 
 # wait here till communication is established

@@ -1,9 +1,23 @@
 import serial
 import time
 from pymodbus.utilities import computeCRC
+import configparser
 import pdb
 
-
+# Read config parser
+config = configparser.ConfigParser()
+config.read(r'/home/pi/wax-iss/wax/config.ini')
+#print("Config files read:", files)
+print("Config sections: ", config.sections())
+#version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
+CAL_port = config['serialports']['CAL_port'] # Read from config file
+SOLO_port = config['serialports']['SOLO_port'] # Read from config file
+TELEM_port = config['serialports']['TELEM_port'] # Read from config file
+#SOLO_port = "/dev/ttyACM0"
+print("CAL_port: ", CAL_port)
+print("SOLO_port: ", SOLO_port)
+print("TELEM_port: ", TELEM_port)
+print("")
 
 
 
@@ -42,18 +56,10 @@ setpoint_read_frame = [0x01,0x03,0x00,0x7F,0x00,0x01,0xB5,0xD2] #request frame f
 temp_crc = add_crc(bytes([0x01,0x03,0x00,0x1C,0x00,0x01]))
 
 
-#version = 'MIT'
-version = 'flight'
 
+#CAL_port = '/dev/ttyACM1'
 
-# Set serial port
-if version == 'MIT':
-	CAL_port = '/dev/ttyUSB1'
-elif version == 'flight':
-	CAL_port = '/dev/ttyACM1'
-
-# MIT: port = ttyUSB1
-# Flight: port = ttyAMC1
+# Connect to serial
 ser=serial.Serial(
 	port=CAL_port, # Serial port
 	baudrate=9600,       # Data rate
@@ -171,7 +177,7 @@ def set_setpoint(temp):
 
 t0=time.time()
 
-set_setpoint(30)
+set_setpoint(20)
 time.sleep(2)
 while True:
 	t = time.time()-t0
