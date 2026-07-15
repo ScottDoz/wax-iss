@@ -175,3 +175,7 @@ cython_debug/
 
 # Videos
 *.h264
+
+# Google Drive OAuth
+wax/DataUpload/credentials.json
+wax/DataUpload/token.json
