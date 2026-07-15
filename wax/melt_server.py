@@ -2399,14 +2399,16 @@ def melt_server_program():
 	
 	# Read config parser
 	config = configparser.ConfigParser()
-	files = config.read('/home/pi/wax-iss/wax/config.ini')
-	print("Config files read:", files)
+	config.read(r'/home/pi/wax-iss/wax/config.ini')
+	#print("Config files read:", files)
 	print("Config sections: ", config.sections())
 	#version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
 	CAL_port = config['serialports']['CAL_port'] # Read from config file
 	SOLO_port = config['serialports']['SOLO_port'] # Read from config file
 	TELEM_port = config['serialports']['TELEM_port'] # Read from config file
-	
+	print("CAL_port: ", CAL_port)
+	print("SOLO_port: ", SOLO_port)
+	print("TELEM_port: ", TELEM_port)
 	
 	# Temporary data folder (when not running experiments)
 	exper_folder = "/home/pi/Data" # default temporary data folder when not running experiment
