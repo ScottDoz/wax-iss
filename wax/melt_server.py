@@ -945,10 +945,10 @@ def stop_log_CAL(client_socket):
 
 def instantiate_solo_client(client_socket): 
 	''' Instantiate solo handle '''
-	global mySolo
+	global mySolo, SOLO_port
 	
 	try:
-		mySolo = solo.SoloMotorControllerUart("/dev/ttyACM0", 0, solo.UartBaudRate.RATE_937500)
+		mySolo = solo.SoloMotorControllerUart(SOLO_port, 0, solo.UartBaudRate.RATE_937500)
 		client_socket.sendall(b"Connecting to SOLO\n")
 	except Exception as e:
 		client_socket.sendall(f"Error in instantiating SOLO: {str(e)}\n".encode('utf-8'))
@@ -2380,6 +2380,7 @@ def melt_server_program():
 	global temp_read_frame, setpoint_read_frame, t0, temp_crc, ser_cal, ser_telem
 	global mySolo # SOLO motor driver instance
 	global spy_motor_flag, gear_ratio, rpm_limit
+	global SOLO_port
 	
 	global exper_folder, melt_running, experiment_rpm_setpoint
 	
@@ -2399,7 +2400,11 @@ def melt_server_program():
 	# Read config parser
 	config = configparser.ConfigParser()
 	config.read('config.ini')
-	version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
+	#version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
+	CAL_port = config['serialports']['CAL_port'] # Read from config file
+	SOLO_port = config['serialports']['SOLO_port'] # Read from config file
+	TELEM_port = config['serialports']['TELEM_port'] # Read from config file
+	
 	
 	# Temporary data folder (when not running experiments)
 	exper_folder = "/home/pi/Data" # default temporary data folder when not running experiment
@@ -2463,7 +2468,7 @@ def melt_server_program():
 	rpm_limit = 200*gear_ratio # Maximum allowed speed (motor)
 	# Note: this will fail if no power to motor
 	try:
-		mySolo = solo.SoloMotorControllerUart("/dev/ttyACM0", 0, solo.UartBaudRate.RATE_937500)
+		mySolo = solo.SoloMotorControllerUart(SOLO_port, 0, solo.UartBaudRate.RATE_937500)
 	except:
 		print("Warning: No connection to SOLO. Check power.")
 	# Reset settings
@@ -2480,7 +2485,7 @@ def melt_server_program():
 	t0=time.time()
 	
 	# Set serial port for cal controller
-	CAL_port = config['serialports']['CAL_port'] # Read from config file
+	
 	#version = 'MIT'
 	#version = 'flight'
 	# Set serial port
@@ -2508,7 +2513,7 @@ def melt_server_program():
 	
 	# ~ # Define serial connection
 	ser_telem = serial.Serial(
-		port='/dev/ttyUSB0',
+		port=TELEM_port,
 		baudrate=115200, # Data rate (from SpaceTango ICD document)
 		parity=serial.PARITY_NONE,
 		stopbits=serial.STOPBITS_ONE,
