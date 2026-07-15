@@ -7,8 +7,17 @@
 
 
 import SoloPy as solo
-
 import time
+
+
+# INPUTS
+# Target speed profile -----------------------------------
+speedAccelValue = 5.0 # Speed acceleration value (rev/s/s)
+speedDecelValue = 5.0 # Speed deceleration value (rev/s/s)
+target_speed_shaft = 100. # Load speed (RPM)
+# ---------------------------------------------------------
+
+
 
 # Instanciate a SOLO object:
 # check with SOLO motion terminal that you are able to connect to your device 
@@ -31,13 +40,16 @@ currentLimit = 3.5 # Current Limit of the Motor
 numberOfEncoderLines = 1024 # Motor's Number of Encoder Lines (PPR pre-quad)
 speedControllerKp = 0.2219924 # Speed controller Kp
 speedControllerKi = 0.0070648 # Speed controller Ki
-speedAccelValue = 5.0 # Speed acceleration value (rev/s/s)
-speedDecelValue = 5.0 # Speed deceleration value (rev/s/s)
 speedLimit = 700*24 # Speed limit (rpm)
 busVoltage = 0 # Battery or Bus Voltage
 actualMotorTorque = 0 # Motor Torque feedback
 actualMotorSpeed = 0 # Motor speed feedback
 actualMotorPosition = 0 # Motor position feedback
+#speedAccelValue = 5.0 # Speed acceleration value (rev/s/s)
+#speedDecelValue = 5.0 # Speed deceleration value (rev/s/s)
+
+
+
 
 
 # Initial Configuration of the device and the Motor
@@ -132,7 +144,6 @@ change_rotation_rate_flag = True
 
 # Target speed
 gear_ratio = 23.76 # Gear ratio
-target_speed_shaft = 200. # Load speed
 target_speed_motor = target_speed_shaft*gear_ratio # Motor speed
 
 while True:

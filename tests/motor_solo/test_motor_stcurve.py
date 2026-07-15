@@ -18,15 +18,21 @@ import pdb
 #                          Inputs
 # ######################################################################
 
-#mode = 'st_time-based'
-mode = 'st_time_optimal'
+#mode = 'ramp'
+mode = 'st_time-based'
+#mode = 'st_time_optimal'
 
 # Note: time-based curve is much smoother
 
 
 # Test speed
-target_speed_shaft = 200. #200. # Load speed (RPM)
+target_speed_shaft = 100. #200. # Load speed (RPM)
 
+
+# Ramp mode: Motor Step Response settings
+speedAccelValue = 5.0 # Speed acceleration value (rev/s/s) 5 == 300 rpm/s
+speedDecelValue = 5.0 # Speed deceleration value (rev/s/s) 5 == 300 rpm/s
+speedLimit = 700*24   # Speed limit (rpm)
 
 # Time optimal ST-curve parameters
 stCurve_maxAccel = 5 # Max accelleration (rev/s/s ???) (RPM/s)
@@ -34,13 +40,9 @@ stCurve_maxJerk = 0.5 # Maximum Jerk (rev/s/s/s???) (RPM/s/s)
 # *** values look like they are in rev/s/s and rev/s/s/s
 
 # Time-based ST-curve parameters
-stCurve_T13 = 3 # Time of Segments 1 and 3 (take-off/landing segment) (s)
+stCurve_T13  = 3 # Time of Segments 1 and 3 (take-off/landing segment) (s)
 stCurve_T2 = 0  # Time of segement 2 (max accel segment) (s)
 
-# Motor Step Response settings
-speedAccelValue = 5.0/3. # Speed acceleration value (rev/s/s) 5 == 300 rpm/s
-speedDecelValue = 5.0/3. # Speed deceleration value (rev/s/s) 5 == 300 rpm/s
-speedLimit = 700*24 # Speed limit (rpm)
 
 
 # Motor Settings
@@ -99,7 +101,15 @@ mySolo.set_speed_limit(speedLimit)
 
 # ST-Curve settings
 
-if mode == 'st_time-based':
+if mode == 'ramp':
+    # Use Motion profile 1
+    mySolo.set_motion_profile_mode(0)
+    mySolo.set_speed_acceleration_value(speedAccelValue)
+    mySolo.set_speed_deceleration_value(speedDecelValue)
+    mySolo.set_speed_limit(speedLimit)
+    
+    
+elif mode == 'st_time-based':
     # Use Motion profile 2
     mySolo.set_motion_profile_mode(1)
     mySolo.set_motion_profile_variable1(stCurve_T13)
