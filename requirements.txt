@@ -137,3 +137,7 @@ Werkzeug==1.0.1
 wiringpi==2.60.1
 wrapt==1.12.1
 zipp==3.21.0
+
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
