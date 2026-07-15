@@ -2399,7 +2399,9 @@ def melt_server_program():
 	
 	# Read config parser
 	config = configparser.ConfigParser()
-	config.read('config.ini')
+	files = config.read('/home/pi/wax-iss/wax/config.ini')
+	print("Config files read:", files)
+	print("Config sections: ", config.sections())
 	#version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
 	CAL_port = config['serialports']['CAL_port'] # Read from config file
 	SOLO_port = config['serialports']['SOLO_port'] # Read from config file
