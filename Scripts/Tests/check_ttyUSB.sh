@@ -4,3 +4,5 @@ for dev in /dev/ttyUSB*; do
 done
 
 ls -l /dev/serial/by-id/
+
+sleep 15
