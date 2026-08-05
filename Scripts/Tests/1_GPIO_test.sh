@@ -4,4 +4,6 @@ sudo pigpiod
 
 echo "Testing GPIOs"
 sudo python ~/wax-iss/tests/gpio/test_gpios.py
-sleep 15
+
+# Keep terminal open
+exec bash

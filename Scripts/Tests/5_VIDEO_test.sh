@@ -2,4 +2,7 @@
 
 echo "Testing Video"
 sudo python ~/wax-iss/tests/camera/test_video.py
-sleep 15
+
+
+# Keep terminal open
+exec bash

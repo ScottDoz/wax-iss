@@ -1,5 +1,7 @@
 #!/bin/bash
 
-echo "Testing Video"
+echo "Testing Thermocouples"
 sudo python ~/wax-iss/tests/thermocouple/test_thermocouple.py
-sleep 15
+
+# Keep terminal open
+exec bash
