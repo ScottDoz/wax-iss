@@ -2,8 +2,11 @@
 
 sudo pigpiod
 
+# Activate venv
+source ~/Documents/myenv/bin/activate
+
 echo "Testing GPIOs"
-sudo python ~/wax-iss/tests/gpio/test_gpios.py
+supy ~/wax-iss/tests/gpio/test_gpios.py
 
 # Keep terminal open
 exec bash

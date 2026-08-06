@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Activate venv
+source ~/Documents/myenv/bin/activate
+
 echo "Plotting latest fluid rotation experiment"
-sudo python ~/wax-iss/wax/plot_latest_fluid.py
+supy ~/wax-iss/wax/plot_latest_fluid.py
 

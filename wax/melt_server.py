@@ -48,7 +48,7 @@ import SoloPy as solo
 from pymodbus.utilities import computeCRC
 import serial
 #thermocoupel imports
-import adafruit_max31856 # Wrong package us 31865
+#import adafruit_max31856 # Wrong package us 31865
 import adafruit_max31865 
 
 # ######################################################################
@@ -579,6 +579,11 @@ def get_temp_and_setpoint_socket(client_socket):
 		#buf=ser_cal.read(7)
 		setpoint = ((buf[3]<<8)+buf[4])/10.0
 		#print(setpoint)
+		
+		# Print to server termianl
+		print(f"Temperature: {temperature} Setpoint: {setpoint}".encode('utf-8'))
+		
+		# Print to client terminal
 		client_socket.sendall(f"Temperature: {temperature} Setpoint: {setpoint}".encode('utf-8'))
 		client_socket.sendall(b"showing temp and setpoint.\n")
 		
@@ -639,7 +644,7 @@ def set_setpoint_socket(client_socket, data):
 		temp = max_temp_limit # Limit just incase it continues
 		return
 	
-	print(temp)
+	
 	try:
 		#construct serial messages
 		first_message = add_crc(bytes([0x01,0x06,0x03,0x00,0x00,0x05]))
@@ -701,6 +706,11 @@ def set_setpoint_socket(client_socket, data):
 			print('Setpoint: no data recieved')
 		#buf=ser_cal.read(7)
 		setpoint = ((buf[3]<<8)+buf[4])/10.0
+		
+		# Print to server terminal
+		print(f"new setpoint = {setpoint} C".encode('utf-8'))
+		
+		# Print to client termianl
 		client_socket.sendall(f"new setpoint = {setpoint}".encode('utf-8'))
 	
 	except Exception as e:

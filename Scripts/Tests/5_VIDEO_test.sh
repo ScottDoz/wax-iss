@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# Activate venv
+source ~/Documents/myenv/bin/activate
+
 echo "Testing Video"
-sudo python ~/wax-iss/tests/camera/test_video.py
+supy ~/wax-iss/tests/camera/test_video.py
 
 
 # Keep terminal open

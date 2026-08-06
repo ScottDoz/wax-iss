@@ -1,4 +1,10 @@
 #!/bin/bash
 
+# Activate venv
+source ~/Documents/myenv/bin/activate
+
 echo "Exiting melt server"
-sudo python ~/wax-iss/wax/melt_client.py exit
+supy ~/wax-iss/wax/melt_client.py exit
+
+# Keep terminal open
+exec bash

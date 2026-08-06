@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Activate venv
+source ~/Documents/myenv/bin/activate
+
 echo "Plotting latest melt experiment"
-sudo python ~/wax-iss/wax/plot_latest_melt.py
+supy ~/wax-iss/wax/plot_latest_melt.py
 

@@ -13,7 +13,7 @@ import time
 import configparser
 import subprocess
 from pymodbus.utilities import computeCRC
-import SoloPy as solo
+#import SoloPy as solo
 import pdb
 
 
@@ -226,6 +226,8 @@ print("")
 
 
 # SOLO Motor Controller ------------------------------------------------
+
+import SoloPy as solo
 
 print("SOLO Motor Controller Connection")
 print("================================")
