@@ -14,9 +14,11 @@ echo ">>dmesg | grep -Ei camera|csi|unicam"
 dmesg | grep -Ei "camera|csi|unicam"
 echo ""
 
-echo ">>libcamera-hello --qt-preview"
-libcamera-hello --qt-preview
+#echo ">>libcamera-hello --qt-preview"
+#libcamera-hello --qt-preview
 
+echo ">>rpicam-vid"
+rpicam-vid
 
 # Keep terminal open
 exec bash
