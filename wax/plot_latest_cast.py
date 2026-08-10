@@ -2,8 +2,12 @@ import pandas as pd
 import numpy as np
 import glob
 import os
-import matplotlib.pyplot as plt
 
+
+# Configure matplotlib
+#import matplotlib
+#matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plt
 
 # Base directory
 label = "TMI_Tests"
@@ -91,3 +95,4 @@ axs[4].set_ylabel("Temperature (C)")
 axs[4].set_xlabel("Time (s)")
 
 plt.show()
+#plt.savefig('cast_data.png')

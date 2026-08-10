@@ -1,8 +1,11 @@
 #!/bin/bash
 
-# Activate venv
-source ~/Documents/myenv/bin/activate
+# Activate plotenv
+#source ~/Documents/myenv/bin/activate
+source ~/Documents/plotenv/bin/activate
 
 echo "Plotting latest cast experiment"
-supy ~/wax-iss/wax/plot_latest_cast.py
+python3 ~/wax-iss/wax/plot_latest_cast.py
 
+# Keep terminal open
+exec bash

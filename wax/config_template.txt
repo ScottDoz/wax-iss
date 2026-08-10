@@ -1,0 +1,7 @@
+[info]
+experiment_id = MIT
+
+[serialports]
+CAL_port = /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B001ABK2-if00-port0
+SOLO_port = /dev/serial/by-id/usb-Texas_Instruments_Virtual_COM_Port_12345678-if00
+TELEM_port = /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B0049XCC-if00-port0 
