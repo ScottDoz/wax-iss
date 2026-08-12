@@ -55,5 +55,5 @@ pip3 install adafruit-circuitpython-max31865
 
 
 # Download and blinka test
-wget http://raw.githubusercontent.com/adafruit/Raspberry-Pi-Installer-Scripts/master/raspi-blinka.py
+wget -P ~/Documents http://raw.githubusercontent.com/adafruit/Raspberry-Pi-Installer-Scripts/master/raspi-blinka.py
 sudo -E env PATH=$PATH python3 ~/Documents/raspi-blinka.py
