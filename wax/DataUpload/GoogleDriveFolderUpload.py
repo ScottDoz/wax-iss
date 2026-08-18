@@ -6,6 +6,7 @@ Created on Tue Jul 14 14:49:32 2026
 """
 
 import os
+import argparse
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -129,33 +130,76 @@ def upload_folder(service, local_folder, drive_parent_id):
 
 if __name__ == "__main__":
     
-    # Hide the main Tk window
-    root = tk.Tk()
-    root.withdraw()
-    
-    # Example usage
-    #LOCAL_FOLDER = r"C:\Users\scott\Documents\Repos\WaxPropulsion\ISS\TestDataFolder"
-    
-    LOCAL_FOLDER = filedialog.askdirectory(
-        title="Select a folder to upload"
+    # Parse input arguments
+    parser = argparse.ArgumentParser(
+        description="Upload a folder and its contents to Google Drive."
     )
+    parser.add_argument(
+        "--folder",
+        type=str,
+        help="Local folder to upload. If ommitted, a GUI folder selector is shown."
+    )
+    parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="Show the GUI folder selector."
+    )
+    args = parser.parse_args()
     
-    if LOCAL_FOLDER:
-        print("Selected:", LOCAL_FOLDER)
-        
-        # Optional: existing Drive folder ID where you want this uploaded
-        DRIVE_PARENT_ID = "1jTAhYvGxmjKYETKUjFiCbowm5QZTbeFO"
-        
-        # This creates the authenticated Google Drive connection
-        service = get_drive_service()
-        
-        upload_folder(
-            service,
-            LOCAL_FOLDER,
-            DRIVE_PARENT_ID
-        )
-        
+    
+    # Existing Drive folder ID where you want this uploaded
+    DRIVE_PARENT_ID = "1jTAhYvGxmjKYETKUjFiCbowm5QZTbeFO"
+    
+    # ------------------------------------------------------------------
+    # Select local folder
+    # ------------------------------------------------------------------
+    
+    if args.folder:
+        # Folder specified on command line
+        LOCAL_FOLDER = os.path.abspath(args.folder)
+        # Example usage
+        #LOCAL_FOLDER = r"C:\Users\scott\Documents\Repos\WaxPropulsion\ISS\TestDataFolder"
+    
     else:
+        # No folder supplied -> use GUI
+        
+        # Hide the main Tk window
+        root = tk.Tk()
+        root.withdraw()
+    
+        LOCAL_FOLDER = filedialog.askdirectory(
+            title="Select a folder to upload"
+        )
+    
+        if LOCAL_FOLDER:
+            print("Selected:", LOCAL_FOLDER)
+        
+        root.destroy()
+        
+    # ------------------------------------------------------------------
+    # Check folder
+    # ------------------------------------------------------------------
+    
+    if not LOCAL_FOLDER:
         print("No folder selected.")
+        exit(0)
+        
+    if not os.path.isdir(LOCAL_FOLDER):
+        print(f"ERROR: Folder does ot exist: {LOCAL_FOLDER}")
+        exit(1)
+        
+    # Print folder
+    print("Selected:", LOCAL_FOLDER)
     
+    # ------------------------------------------------------------------
+    # Authenticate and upload
+    # ------------------------------------------------------------------
+        
+    # This creates the authenticated Google Drive connection
+    service = get_drive_service()
     
+    upload_folder(
+        service,
+        LOCAL_FOLDER,
+        DRIVE_PARENT_ID
+    )
