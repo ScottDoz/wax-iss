@@ -15,7 +15,7 @@ import configparser
 # Target speed profile -----------------------------------
 speedAccelValue = 5.0 # Speed acceleration value (rev/s/s)
 speedDecelValue = 5.0 # Speed deceleration value (rev/s/s)
-target_speed_shaft = 100. # Load speed (RPM)
+target_speed_shaft = 200. # Load speed (RPM)
 # ---------------------------------------------------------
 
 # Read config parser
