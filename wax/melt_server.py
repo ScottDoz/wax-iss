@@ -38,6 +38,7 @@ import numpy as np
 import pandas as pd
 import csv
 import configparser
+import logging
 
 #import pigpio
 import rotary_encoder
@@ -50,6 +51,38 @@ import serial
 #thermocoupel imports
 #import adafruit_max31856 # Wrong package us 31865
 import adafruit_max31865 
+
+# ######################################################################
+# Logging
+# ######################################################################
+
+# Create logs directory
+os.makedirs("/home/pi/Documents/logs", exist_ok=True)
+
+# Setup server log
+logger = logging.getLogger("server")
+logger.setLevel(logging.INFO)
+
+# Log file handler - format with time and level
+file_handler = logging.FileHandler('/home/pi/Documents/logs/server.log')
+file_handler.setFormatter(
+	logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+)
+
+# Console file handler - just print message
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter( logging.Formatter("%(message)s") )
+
+# Add handlers
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# Test logger
+logger.info("====== LOGGER TEST ======")
+logger.info(f"Logger name: {logger.name}")
+logger.info(f"Logger handlers: {logger.handlers}")
+logger.info(f"Logger level: {logger.level}")
+
 
 # ######################################################################
 # Threading
@@ -78,15 +111,18 @@ def light_turn_on(client_socket,data):
 	''' Turn lights on '''
 	global light_is_on
 	if light_is_on:
-		client_socket.sendall(b"Lights already on.\n")
+		logger.info("Lights already on")
+		#client_socket.sendall(b"Lights already on.\n")
 		return
 	try:
 		light_is_on = True
 		pixels.fill(color)
 		pixels.show()
-		client_socket.sendall(b"Turning on lights.\n")
+		logger.info("Turning on lights.") # Print to server and client
+		#client_socket.sendall(b"Turning on lights.\n")
 	except Exception as e:
-		client_socket.sendall(f"Error in turning on: {str(e)}\n".encode('utf-8'))
+		logger.info(f"Error in turning on: {str(e)}\n")
+		#client_socket.sendall(f"Error in turning on: {str(e)}\n".encode('utf-8'))
 		
 		
 def light_set_color_socket(client_socket,data): #light set color
@@ -561,6 +597,7 @@ def get_temp_and_setpoint_socket(client_socket):
 			#print('recieved: ',buf.hex())
 		else:
 			client_socket.sendall('Temperature: no data recieved')
+			logging.info('Temperature: no data recieved')
 
 		# Decode temperature response
 		temp_value=buf[4]
@@ -581,7 +618,7 @@ def get_temp_and_setpoint_socket(client_socket):
 		#print(setpoint)
 		
 		# Print to server termianl
-		print(f"Temperature: {temperature} Setpoint: {setpoint}".encode('utf-8'))
+		logging.info(f"Temperature: {temperature} Setpoint: {setpoint}".encode('utf-8'))
 		
 		# Print to client terminal
 		client_socket.sendall(f"Temperature: {temperature} Setpoint: {setpoint}".encode('utf-8'))
@@ -1064,7 +1101,7 @@ def reset_solo_settings():
 	global mySolo, gear_ratio, rpm_limit
 	
 	try:
-		print("\nSOLO Motor Settings")
+		logger.info("\nSOLO Motor Settings")
 	
 		# Fixed settings
 		numberOfPoles = 4 # Motor's Number of Poles
@@ -1072,33 +1109,33 @@ def reset_solo_settings():
 		mySolo.set_motor_type(solo.MotorType.BLDC_PMSM) # Motor type
 		mySolo.set_motor_poles_counts(4) # Motor's Number of Poles (4)
 		mySolo.set_incremental_encoder_lines(numberOfEncoderLines)
-		print("Motor type: ", mySolo.get_motor_type())
-		print("Motor poles count: ", mySolo.get_motor_poles_counts())
-		print("Incremental encoder lines: ", mySolo.get_incremental_encoder_lines())
+		logger.info(f"Motor type: {mySolo.get_motor_type()}")
+		logger.info(f"Motor poles count: {mySolo.get_motor_poles_counts()}")
+		logger.info(f"Incremental encoder lines: {mySolo.get_incremental_encoder_lines()}")
 		
 		# Control mode
 		mySolo.set_feedback_control_mode(solo.FeedbackControlMode.ENCODERS) # Use Encoders for sensing
 		mySolo.set_control_mode(solo.ControlMode.SPEED_MODE) # Speed control mode
 		mySolo.set_command_mode(solo.CommandMode.DIGITAL)    # Digital mode
-		print("Command mode: ", mySolo.get_command_mode())
-		print("Control mode: ", mySolo.get_control_mode())
-		print("Control feedback mode: ", mySolo.get_feedback_control_mode())
+		logger.info(f"Command mode: {mySolo.get_command_mode()}")
+		logger.info(f"Control mode: {mySolo.get_control_mode()}")
+		logger.info(f"Control feedback mode: {mySolo.get_feedback_control_mode()}")
 		
 		# PWM and Current limit
 		pwmFrequency = 80  # Desired Switching or PWM Frequency at Output (80 khz)
 		currentLimit = 3.5 # Current Limit of the Motor (3.5 Amps)
 		mySolo.set_output_pwm_frequency_khz(pwmFrequency)
 		mySolo.set_current_limit(currentLimit)
-		print("Output PWM Frequency (khz)", mySolo.get_output_pwm_frequency_khz())
-		print("Current limit (A)", mySolo.get_current_limit())
+		logger.info(f"Output PWM Frequency (khz): {mySolo.get_output_pwm_frequency_khz()}")
+		logger.info(f"Current limit (A): {mySolo.get_current_limit()}")
 		
 		# PID settings
 		speedControllerKp = 0.2219924 # Speed controller Kp
 		speedControllerKi = 0.0070648 # Speed controller Ki
 		mySolo.set_speed_controller_kp(speedControllerKp)
 		mySolo.set_speed_controller_ki(speedControllerKi)
-		print("Speed controller kp: ", mySolo.get_speed_controller_kp())
-		print("Speed controller ki: ", mySolo.get_speed_controller_ki())
+		logger.info(f"Speed controller kp: {mySolo.get_speed_controller_kp()}")
+		logger.info(f"Speed controller ki: {mySolo.get_speed_controller_ki()}")
 		
 		# Acceleration/Deceleration, Speed limit values
 		speedAccelValue = 5.0 # Speed acceleration value (rev/s/s)
@@ -1107,39 +1144,39 @@ def reset_solo_settings():
 		mySolo.set_speed_deceleration_value(speedDecelValue)
 		speedLimit = 700*24 # Speed limit (rpm)
 		mySolo.set_speed_limit(speedLimit)
-		print("Speed acceleration value", mySolo.get_speed_acceleration_value()) # Rev/s/s
-		print("Speed deceleration value", mySolo.get_speed_deceleration_value())
-		print("Speed limit", mySolo.get_speed_limit())
+		logger.info("Speed acceleration value: {mySolo.get_speed_acceleration_value()}") # Rev/s/s
+		logger.info(f"Speed deceleration value {mySolo.get_speed_deceleration_value()}")
+		logger.info(f"Speed limit {mySolo.get_speed_limit()}")
 		
 		# Motor direction
 		mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE) # CCW = +ve
-		print("Motor direction", mySolo.get_motor_direction())
+		logger.info(f"Motor direction {mySolo.get_motor_direction()}")
 		
 		
 		# Other	
-		print("encoder_hall_ccw_offset", mySolo.get_encoder_hall_ccw_offset())
-		print("encoder_hall_cw_offset", mySolo.get_encoder_hall_cw_offset())
-		print("Board temperature (C)", mySolo.get_board_temperature())
-		print("Motor resistance (Ohm)", mySolo.get_motor_resistance())
-		print("Motor inductance (H)", mySolo.get_motor_inductance())
+		logger.info(f"encoder_hall_ccw_offset {mySolo.get_encoder_hall_ccw_offset()}")
+		logger.info(f"encoder_hall_cw_offset {mySolo.get_encoder_hall_cw_offset()}")
+		logger.info(f"Board temperature (C) {mySolo.get_board_temperature()}")
+		logger.info(f"Motor resistance (Ohm) {mySolo.get_motor_resistance()}")
+		logger.info(f"Motor inductance (H) {mySolo.get_motor_inductance()}")
 		
-		print("Communication is working", mySolo.communication_is_working())
+		logger.info(f"Communication is working {mySolo.communication_is_working()}")
 		
 		# Motion profile mode
-		print("Motion profile mode", mySolo.get_motion_profile_mode())
-		print("Motion profile variable 1", mySolo.get_motion_profile_variable1())
-		print("Motion profile variable 2", mySolo.get_motion_profile_variable2())
-		print("Motion profile variable 3", mySolo.get_motion_profile_variable3())
-		print("Motion profile variable 4", mySolo.get_motion_profile_variable4())
-		print("Motion profile variable 5", mySolo.get_motion_profile_variable5())
+		logger.info(f"Motion profile mode {mySolo.get_motion_profile_mode()}")
+		logger.info(f"Motion profile variable 1 {mySolo.get_motion_profile_variable1()}")
+		logger.info(f"Motion profile variable 2 {mySolo.get_motion_profile_variable2()}")
+		logger.info(f"Motion profile variable 3 {mySolo.get_motion_profile_variable3()}")
+		logger.info(f"Motion profile variable 4 {mySolo.get_motion_profile_variable4()}")
+		logger.info(f"Motion profile variable 5 {mySolo.get_motion_profile_variable5()}")
 		
 		# Motor speed limit
 		rpm_limit = 200*gear_ratio # Maximum allowed speed (motor)
-		print("Motor speed limit (RPM)", rpm_limit)
+		logger.info(f"Motor speed limit (RPM) {rpm_limit}")
 
 		
 	except Exception as e:
-		print("Error in resetting SOLO settings: {}".format(e))
+		logger.info("Error in resetting SOLO settings: {}".format(e))
 
 	return
 	
@@ -1148,53 +1185,54 @@ def get_solo_settings_client(client_socket):
 	global mySolo, gear_ratio, rpm_limit
 	
 	try:
-		print("\nSOLO Motor Settings")
+		
+		
+		logger.info("\nSOLO Motor Settings")
 	
 		# Fixed settings
-		print("Motor type: ", mySolo.get_motor_type())
-		print("Motor poles count: ", mySolo.get_motor_poles_counts())
-		print("Incremental encoder lines: ", mySolo.get_incremental_encoder_lines())
+		logger.info(f"Motor type: {mySolo.get_motor_type()}")
+		logger.info(f"Motor poles count: {mySolo.get_motor_poles_counts()}")
+		logger.info(f"Incremental encoder lines: {mySolo.get_incremental_encoder_lines()}")
 		
 		# Control mode
-		print("Command mode: ", mySolo.get_command_mode())
-		print("Control mode: ", mySolo.get_control_mode())
-		print("Control feedback mode: ", mySolo.get_feedback_control_mode())
+		logger.info(f"Command mode: {mySolo.get_command_mode()}")
+		logger.info(f"Control mode: {mySolo.get_control_mode()}")
+		logger.info(f"Control feedback mode: {mySolo.get_feedback_control_mode()}")
 		
 		# PWM and Current limit
-		print("Output PWM Frequency (khz)", mySolo.get_output_pwm_frequency_khz())
-		print("Current limit (A)", mySolo.get_current_limit())
+		logger.info(f"Output PWM Frequency (khz): {mySolo.get_output_pwm_frequency_khz()}")
+		logger.info(f"Current limit (A): {mySolo.get_current_limit()}")
 		
 		# PID settings
-		print("Speed controller kp: ", mySolo.get_speed_controller_kp())
-		print("Speed controller ki: ", mySolo.get_speed_controller_ki())
+		logger.info(f"Speed controller kp: {mySolo.get_speed_controller_kp()}")
+		logger.info(f"Speed controller ki: {mySolo.get_speed_controller_ki()}")
 		
 		# Acceleration/Deceleration, Speed limit values
-		print("Speed acceleration value", mySolo.get_speed_acceleration_value()) # Rev/s/s
-		print("Speed deceleration value", mySolo.get_speed_deceleration_value())
-		print("Speed limit", mySolo.get_speed_limit())
+		logger.info("Speed acceleration value: {mySolo.get_speed_acceleration_value()}") # Rev/s/s
+		logger.info(f"Speed deceleration value {mySolo.get_speed_deceleration_value()}")
+		logger.info(f"Speed limit {mySolo.get_speed_limit()}")
 		
 		# Motor direction
-		mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE) # CCW = +ve
-		print("Motor direction", mySolo.get_motor_direction())
+		logger.info(f"Motor direction {mySolo.get_motor_direction()}")
 		
 		# Other	
-		print("encoder_hall_ccw_offset", mySolo.get_encoder_hall_ccw_offset())
-		print("encoder_hall_cw_offset", mySolo.get_encoder_hall_cw_offset())
-		print("Board temperature (C)", mySolo.get_board_temperature())
-		print("Motor resistance (Ohm)", mySolo.get_motor_resistance())
-		print("Motor inductance (H)", mySolo.get_motor_inductance())
+		logger.info(f"encoder_hall_ccw_offset {mySolo.get_encoder_hall_ccw_offset()}")
+		logger.info(f"encoder_hall_cw_offset {mySolo.get_encoder_hall_cw_offset()}")
+		logger.info(f"Board temperature (C) {mySolo.get_board_temperature()}")
+		logger.info(f"Motor resistance (Ohm) {mySolo.get_motor_resistance()}")
+		logger.info(f"Motor inductance (H) {mySolo.get_motor_inductance()}")
 		
-		print("Communication is working", mySolo.communication_is_working())
+		logger.info(f"Communication is working {mySolo.communication_is_working()}")
 		
 		# Motion profile mode
-		print("Motion profile mode", mySolo.get_motion_profile_mode())
-		print("Motion profile variable 1", mySolo.get_motion_profile_variable1())
-		print("Motion profile variable 2", mySolo.get_motion_profile_variable2())
-		print("Motion profile variable 3", mySolo.get_motion_profile_variable3())
-		print("Motion profile variable 4", mySolo.get_motion_profile_variable4())
-		print("Motion profile variable 5", mySolo.get_motion_profile_variable5())
+		logger.info(f"Motion profile mode {mySolo.get_motion_profile_mode()}")
+		logger.info(f"Motion profile variable 1 {mySolo.get_motion_profile_variable1()}")
+		logger.info(f"Motion profile variable 2 {mySolo.get_motion_profile_variable2()}")
+		logger.info(f"Motion profile variable 3 {mySolo.get_motion_profile_variable3()}")
+		logger.info(f"Motion profile variable 4 {mySolo.get_motion_profile_variable4()}")
+		logger.info(f"Motion profile variable 5 {mySolo.get_motion_profile_variable5()}")
 
-		print("Motor speed limit (RPM)", rpm_limit)
+		logger.info(f"Motor speed limit (RPM) {rpm_limit}")
 
 		
 	except Exception as e:
@@ -1233,8 +1271,8 @@ def set_motor_mode_ramp(client_socket):
 		# Get parameters
 		accel, _ = mySolo.get_speed_acceleration_value() # accel (rev/s/s)
 		# Printouts
-		print("\nSet motion profile 1: RAMP")
-		print(f"Current accel = {accel} rev/s/s = {accel*60} RPM/s \n")
+		logger.info("\nSet motion profile 1: RAMP")
+		logger.info(f"Current accel = {accel} rev/s/s = {accel*60} RPM/s \n")
 	
 	except Exception as e:
 		client_socket.sendall(f"Error in setting SOLO settings: {str(e)}\n".encode('utf-8'))
@@ -1274,9 +1312,9 @@ def set_motor_mode_st_time_based(client_socket,stCurve_T13,stCurve_T2):
 		mySolo.set_motion_profile_variable2(stCurve_T2)  # T2 time (s) (linear section)
 		
 		# Printouts
-		print("\nSet motion profile 2: st-curve time-based")
-		print(f"Time T1 = T3 = {stCurve_T13} s (ramp up/down)")
-		print(f"Time T2 = {stCurve_T2} s (linear accel) \n")
+		logger.info("\nSet motion profile 2: st-curve time-based")
+		logger.info(f"Time T1 = T3 = {stCurve_T13} s (ramp up/down)")
+		logger.info(f"Time T2 = {stCurve_T2} s (linear accel) \n")
 	
 	except Exception as e:
 		client_socket.sendall(f"Error in setting SOLO settings: {str(e)}\n".encode('utf-8'))
@@ -1317,9 +1355,9 @@ def set_motor_mode_st_time_optimal(client_socket,stCurve_maxAccel,stCurve_maxJer
 		mySolo.set_motion_profile_variable2(stCurve_maxJerk)
 		
 		# Printouts
-		print("\nSet motion profile 3: st-curve time optimal")
-		print(f"Max accel = {stCurve_maxAccel} rev/s/s = {stCurve_maxAccel*60} RPM/s")
-		print(f"Max jerk {stCurve_maxJerk} rev/s/s/s = {stCurve_maxJerk*60} RPM/s/s \n")
+		logger.info("\nSet motion profile 3: st-curve time optimal")
+		logger.info(f"Max accel = {stCurve_maxAccel} rev/s/s = {stCurve_maxAccel*60} RPM/s")
+		logger.info(f"Max jerk {stCurve_maxJerk} rev/s/s/s = {stCurve_maxJerk*60} RPM/s/s \n")
 	
 	except Exception as e:
 		client_socket.sendall(f"Error in setting SOLO settings: {str(e)}\n".encode('utf-8'))
@@ -1335,7 +1373,7 @@ def set_solo_accel_client(client_socket,val):
 	
 	try:
 		mySolo.set_speed_acceleration_value(val)
-		print("Speed acceleration value (rev/s/s)", mySolo.get_speed_acceleration_value())
+		logger.info(f"Speed acceleration value (rev/s/s) {mySolo.get_speed_acceleration_value()}")
 		
 	except Exception as e:
 		client_socket.sendall(f"Error in setting value: {str(e)}\n".encode('utf-8'))
@@ -1348,7 +1386,7 @@ def set_solo_decel_client(client_socket,val):
 	
 	try:
 		mySolo.set_speed_deceleration_value(val)
-		print("Speed deceleration value (rev/s/s)", mySolo.get_speed_deceleration_value())
+		logger.info(f"Speed deceleration value (rev/s/s) {mySolo.get_speed_deceleration_value()}")
 		
 	except Exception as e:
 		client_socket.sendall(f"Error in setting value: {str(e)}\n".encode('utf-8'))
@@ -1368,10 +1406,10 @@ def set_motor_speed_limit_client(client_socket,val):
 		
 		if val > 12000:
 			val = 12000
-			print("Warning! Max continous motor speed is 12000 RPM. Setting RPM limit to 12000")
+			logger.info("Warning! Max continous motor speed is 12000 RPM. Setting RPM limit to 12000")
 		
 		rpm_limit = val
-		print("Morot speed limit (RPM)", rpm_limit)
+		logger.info(f"Morot speed limit (RPM) {rpm_limit}")
 		
 	except Exception as e:
 		client_socket.sendall(f"Error in setting value: {str(e)}\n".encode('utf-8'))
@@ -1384,8 +1422,8 @@ def stop_rotation_client(client_socket):
 	global mySolo
 	
 	try:
-		print("\nStopping rotation")
-		print("Speed deceleration value", mySolo.get_speed_deceleration_value())
+		logger.info("\nStopping rotation")
+		logger.info(f"Speed deceleration value {mySolo.get_speed_deceleration_value()}")
 		mySolo.set_speed_reference(0.) #this is motor speed not shaft speed
 		
 		
@@ -1407,13 +1445,13 @@ def set_target_motor_speed_client(client_socket, rpm):
 		
 		if rpm >= rpm_limit :
 			rpm = rpm_limit
-			print("\nRequested speed too high. Resetting to max speed (RPM):",str(rpm))
+			logger.info(f"\nRequested speed too high. Resetting to max speed (RPM): {rpm}")
 		
 		client_socket.sendall(f"Setting target motor speed (RPM): {str(rpm)}\n".encode('utf-8'))
 		
-		print("\nSetting target motor speed (RPM):",str(rpm))
-		print("Speed acceleration value", mySolo.get_speed_acceleration_value())
-		print("Speed deceleration value", mySolo.get_speed_deceleration_value())
+		logger.info(f"\nSetting target motor speed (RPM): {rpm}")
+		print(f"Speed acceleration value {mySolo.get_speed_acceleration_value()}")
+		print(f"Speed deceleration value {mySolo.get_speed_deceleration_value()}")
 		mySolo.set_speed_reference(rpm) #this is motor speed not shaft speed
 		
 		
@@ -1441,14 +1479,14 @@ def set_target_load_speed_client(client_socket, rpm_load):
 		
 		if rpm >= rpm_limit :
 			rpm = rpm_limit
-			print("\nRequested speed too high. Resetting to max speed (RPM):",str(rpm))
+			logger.info(f"\nRequested speed too high. Resetting to max speed (RPM): {rpm}")
 		
 		# FIXME: something wrong with sendall when running stop melt
 		#client_socket.sendall(f"Setting target load speed (RPM): {str(rpm/gear_ratio)}\n".encode('utf-8'))
 		
-		print("\nSetting target load speed (RPM):",str(rpm/gear_ratio))
-		print("Speed acceleration value", mySolo.get_speed_acceleration_value())
-		print("Speed deceleration value", mySolo.get_speed_deceleration_value())
+		print(f"\nSetting target load speed (RPM): {rpm/gear_ratio}")
+		print(f"Speed acceleration value {mySolo.get_speed_acceleration_value()}")
+		print(f"Speed deceleration value {mySolo.get_speed_deceleration_value()}")
 		mySolo.set_speed_reference(rpm) #this is motor speed not shaft speed
 		
 		#client_socket.sendall(b"SOLO parameters set\n")
@@ -1483,7 +1521,7 @@ def spy_motor_speed_data(client_socket):
 			#rpm_setpoint = 0.0
 			
 			t = (time.perf_counter()-stime)
-			print("Time {:.2f} s Shaft speed: {:.2f}, Motor speed: {:.2f}, Ref motor speed: {:.2f}".format(t,actualMotorSpeed/gear_ratio, actualMotorSpeed, rpm_setpoint))
+			logger.info("Time {:.2f} s Shaft speed: {:.2f}, Motor speed: {:.2f}, Ref motor speed: {:.2f}".format(t,actualMotorSpeed/gear_ratio, actualMotorSpeed, rpm_setpoint))
 			time.sleep(timestep_motor)
 	except Exception as e:
 		client_socket.sendall(f"Error in starting spy: {str(e)}\n".encode('utf-8'))
@@ -1779,7 +1817,7 @@ def create_folder(client_socket, prefix, label, rpm_set, temp_setpoint):
 		session_file_path = "/home/pi/Data/" + label
 		if not os.path.exists(session_file_path):
 			os.makedirs(session_file_path)
-			print("created folder:", session_file_path)
+			logger.info(f"created folder: {session_file_path}")
 	except Exception as e:
 		client_socket.sendall(f"Error in making directory: {str(e)}\n".encode('utf-8'))
 		
@@ -1804,8 +1842,9 @@ def create_folder(client_socket, prefix, label, rpm_set, temp_setpoint):
 	exper_folder = session_file_path + "/"+prefix + "_" + str(rpm_set) + "_" + str(temp_setpoint) + "_" + str(count)
 	if not os.path.exists(exper_folder):
 		os.makedirs(exper_folder)
-		print("created folder:", exper_folder)
+		logger.info(f"created folder: {exper_folder}")
 	return exper_folder
+
 
 # ######################################################################
 # TELEMETRY
@@ -1872,18 +1911,18 @@ def start_telemetry_client(client_socket):
 				ser_telem.write(telem_string)
 				
 				
-				print(f"\nT={t:.2f} sending telemetry!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-				print(f"Motor Telemetry:  t={telem_motor_t:.2f}, load_speed={telem_motor_motor_speed/gear_ratio:.2f}")
-				print(f"CAL Telemetry:    t={telem_CAL_t:.2f}, temp={telem_CAL_temp:.2f}, setpoint={telem_CAL_setpoint:.2f}")
-				print(f"Thermo Telemetry: t={telem_thermo_t:.2f}, temp1={telem_thermo_temp1:.2f}, temp2={telem_thermo_temp2:.2f}")
-				print("telemetry_string:")
-				print(telem_string)
+				logger.info(f"\nT={t:.2f} sending telemetry!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+				logger.info(f"Motor Telemetry:  t={telem_motor_t:.2f}, load_speed={telem_motor_motor_speed/gear_ratio:.2f}")
+				logger.info(f"CAL Telemetry:    t={telem_CAL_t:.2f}, temp={telem_CAL_temp:.2f}, setpoint={telem_CAL_setpoint:.2f}")
+				logger.info(f"Thermo Telemetry: t={telem_thermo_t:.2f}, temp1={telem_thermo_temp1:.2f}, temp2={telem_thermo_temp2:.2f}")
+				logger.info("telemetry_string:")
+				logger.info(telem_string)
 				last_trigger += telem_interval # Increment last trigger time
 			
 			# Sleep
 			time.sleep(0.1)
 			
-		print("Ended telemetry")
+		logger.info("Ended telemetry")
 	except Exception as e:
                 client_socket.sendall(f"Error in starting log: {str(e)}\n".encode('utf-8'))
 	finally:
@@ -1900,7 +1939,7 @@ def stop_ltelemetry(client_socket):
 		return
 	try:
 		stop_telemetry_event.set()
-		print("Telemetry stop signal sent")
+		logger.info("Telemetry stop signal sent")
 		#client_socket.sendall(b"Stopping telemetry")
 	except Exception as e:
 		client_socket.sendall(f"Error in stopping telemetry: {str(e)}\n".encode('utf-8'))
@@ -1967,7 +2006,7 @@ def start_log_data(client_socket):
 	telemetry_thread.start()
 	
 	
-	print("Data logging started.")
+	logger.info("Data logging started.")
 	
 	return 
 
@@ -1990,9 +2029,25 @@ def stop_log_data(client_socket):
 	if telemetry_thread is not None:
 		telemetry_thread.join(timeout=2)
 	
-	print("Stopped loggin data.")
+	logger.info("Stopped loggin data.")
 	
 	return
+
+# ######################################################################
+# Terminal print and logging
+# ######################################################################
+
+def print_server(message, client_socket=None):
+	''' Print a message on the server and optionally send it to the client '''
+	
+	# Print to server terminal
+	print(message, flush=True)
+	
+	if client_socket is None:
+		try:
+			client_socket.sendall((message + " <client sendall> " + '\n').encode())
+		except (BrokenPipeError, ConnectionResetError):
+			pass	
 
 # ######################################################################	
 # Experiments
@@ -2034,7 +2089,7 @@ def start_log_exp(client_socket, label, prefix, rpm_set, temp_setpoint, camera_p
 	try:
 		start_recording(client_socket, preview=camera_preview)
 	except:
-		print("Error starting camera")
+		logger.info("Error starting camera")
 	
 	
 	# Start data log (runs in background threads)
@@ -2084,9 +2139,8 @@ def stop_log_exp(client_socket):
 	#log_thread.join()
 	
 	time.sleep(1.) # Give threads a short time to exit
-	print("Stopped experiment log.")
-	print("Files saved to: ", exper_folder)
-	
+	logger.info("Stopped experiment log.")
+	logger.info(f"Files saved to: {exper_folder}")
 	
 	return
 
@@ -2394,6 +2448,7 @@ def melt_server_program():
 	
 	global exper_folder, melt_running, experiment_rpm_setpoint
 	
+	
 	# Telemetry variables
 	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq # Motor
 	global telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2 # Thermocouple
@@ -2406,19 +2461,27 @@ def melt_server_program():
 	is_running = True
 	melt_running = False
 	
+	# Start logger
+	logger.info("\n\n========================================================================")
+	logger.info("Server started")
 	
 	# Read config parser
 	config = configparser.ConfigParser()
 	config.read(r'/home/pi/wax-iss/wax/config.ini')
 	#print("Config files read:", files)
-	print("Config sections: ", config.sections())
+	#print("Config sections: ", config.sections())
+	logger.info(f"Config sections: {config.sections()}")
+	
 	#version = config['info']['experiment_id'] # Read experiment ID (which pi is this?)
 	CAL_port = config['serialports']['CAL_port'] # Read from config file
 	SOLO_port = config['serialports']['SOLO_port'] # Read from config file
 	TELEM_port = config['serialports']['TELEM_port'] # Read from config file
-	print("CAL_port: ", CAL_port)
-	print("SOLO_port: ", SOLO_port)
-	print("TELEM_port: ", TELEM_port)
+	#rint("CAL_port: ", CAL_port)
+	#print("SOLO_port: ", SOLO_port)
+	#print("TELEM_port: ", TELEM_port)
+	logger.info(f"CAL_port: {CAL_port}")
+	logger.info(f"SOLO_port: {SOLO_port}")
+	logger.info(f"TELEM_port: {TELEM_port}")
 	
 	# Temporary data folder (when not running experiments)
 	exper_folder = "/home/pi/Data" # default temporary data folder when not running experiment
@@ -2484,7 +2547,7 @@ def melt_server_program():
 	try:
 		mySolo = solo.SoloMotorControllerUart(SOLO_port, 0, solo.UartBaudRate.RATE_937500)
 	except:
-		print("Warning: No connection to SOLO. Check power.")
+		logger.info("Warning: No connection to SOLO. Check power.")
 	# Reset settings
 	reset_solo_settings()
 	
@@ -2546,22 +2609,23 @@ def melt_server_program():
 	server_socket.bind((host,port))
 	server_socket.listen(5)
 	
-	print("Melting Server started. Waiting for connections...")
+	#print("Melting Server started. Waiting for connections..."); 
+	logger.info("Melting Server started. Waiting for connections...")
 	
 	while is_running:
 		try:
 			server_socket.settimeout(1.0)
 			try:
 				client_socket, address = server_socket.accept()
-				print(f"Connection established with {address}")
+				logger.info(f"Connection established with {address}")
 				client_handler = threading.Thread(target=handle_client_connection, args = (client_socket,))
 				client_handler.start()
 			except socket.timeout:
 				continue
 		except KeyboardInterrupt:
-			print("\nServer shutting down (KeyboardInterrupt).")
+			logger.info("\nServer shutting down (KeyboardInterrupt).")
 			is_running = False
-	print("Server stopped.")
+	logger.info("Server stopped.")
 	server_socket.close()
 
 if __name__ == "__main__":
