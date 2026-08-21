@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-label="TMI_Tests"
+label="TMI_Tests_21Aug2026"
 rpm=100
 setpoint=40
 sudo_pass="raspberry"

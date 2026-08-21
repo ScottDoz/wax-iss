@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-label="TMI_Tests"
+label="TMI_Tests_21Aug2026"
 accel=20 # Acceleration/deceleration value (rev/s/s)
 rpm=100
 setpoint=20
