@@ -1496,6 +1496,34 @@ def set_target_load_speed_client(client_socket, rpm_load):
 		client_socket.sendall(f"Error in stopping rotation: {str(e)}\n".encode('utf-8'))
 
 	return
+
+def set_current_limit_client(client_socket, current_limit): 
+	''' Set current limit on SOLO. '''
+	global mySolo
+	
+	
+	try:
+		
+		#rpm_limit = 200*24 # Maximum allowed speed (motor)
+		
+		# Current limit max
+		if current_limit >= 5.5 :
+			current_limit = 5.5
+			logger.info(f"\nRequested current limit too high. Resetting to current limit to 5.5 (A)")
+		
+		
+		print(f"\nSetting current limit (A): {current_limit}")
+		mySolo.set_current_limit(current_limit)
+		
+		#client_socket.sendall(b"SOLO parameters set\n")
+
+		
+	except Exception as e:
+		client_socket.sendall(f"Error in setting current limit: {str(e)}\n".encode('utf-8'))
+
+	return
+
+
 	
 def spy_motor_speed_data(client_socket):
 	''' Print motor speed data to screen '''
@@ -2327,6 +2355,12 @@ def handle_client_connection(client_socket):
 				rpm_load = data[22:]			
 				set_target_load_speed_client(client_socket, float(rpm_load))
 				break
+
+			elif data.startswith("set_current_limit"):
+				current_limit = data[17:]			
+				set_current_limit_client(client_socket, float(current_limit))
+				break
+
 			elif data.startswith("spy_motor_speed"):
 				spy_motor_speed_data(client_socket)
 				break
