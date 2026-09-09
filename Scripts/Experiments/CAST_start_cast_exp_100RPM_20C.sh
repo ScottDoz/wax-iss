@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-label="TMI_Tests_21Aug2026"
+label="TMI_Tests_8Sept2026"
 rpm=100
 setpoint=20
 sudo_pass="raspberry"
@@ -18,7 +18,13 @@ echo "Starting casting experiemnt"
 #sudo python ~/wax-iss/wax/melt_client.py start_log_exp $label,"Cast","$rpm","$setpoint" # Lights, camera, data log
 supy ~/wax-iss/wax/melt_client.py start_log_preview_exp $label,"Cast","$rpm","$setpoint" # Lights, camera, data log
 sleep 3
+
+# Set temperature setpoint
 supy ~/wax-iss/wax/melt_client.py set_setpoint "$setpoint" # Change CAL temperature setpoint
 sleep 1
+supy ~/wax-iss/wax/melt_client.py set_setpoint "$setpoint" # Change CAL temperature setpoint. Run again to confirm.
+sleep 1
+
+# Ramp up motors
 supy ~/wax-iss/wax/melt_client.py set_target_load_speed "$rpm" # Ramp up motors
 sleep 10

@@ -22,14 +22,14 @@ sleep 1
 supy ~/wax-iss/wax/melt_client.py set_setpoint "$setpoint" # Change CAL temperature setpoint (turn off) # Run again to make sure
 sleep 1
 
-# Speed = 100 RPM ------------------------------------------------------
+# Speed = 50 RPM ------------------------------------------------------
 
-RPM=100
+RPM=50
 
 # Individual time-based st-curve profiles
 
 # Profile A-1
-T13=7.5
+T13= 10.0
 T2=0.0
 echo "Profile A-1: T1=T3=$T13 s, T2=$T2 s"
 supy ~/wax-iss/wax/melt_client.py set_motor_mode_st_time_based "$T13","$T2" # Mode 2: St-curve time-based
@@ -43,7 +43,7 @@ sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 sec
 
 
 # Profile A-2
-T13=5.0
+T13= 7.5
 T2=0.0
 echo "Profile A-2: T1=T3=$T13 s, T2=$T2 s"
 supy ~/wax-iss/wax/melt_client.py set_motor_mode_st_time_based "$T13","$T2" # Mode 2: St-curve time-based
@@ -56,7 +56,7 @@ SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 10}")
 sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 sec
 
 # Profile A-3
-T13=2.5
+T13= 5.0
 T2=0.0
 echo "Profile A-3: T1=T3=$T13 s, T2=$T2 s"
 supy ~/wax-iss/wax/melt_client.py set_motor_mode_st_time_based "$T13","$T2" # Mode 2: St-curve time-based
@@ -67,6 +67,78 @@ sleep "$SLEEP_TIME" # Wait until ramped up, hold for 5 sec
 supy ~/wax-iss/wax/melt_client.py set_target_load_speed 0 # Stop rotation
 SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 10}")
 sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 sec
+
+# Profile A-4
+T13=2.5
+T2=0.0
+echo "Profile A-4: T1=T3=$T13 s, T2=$T2 s"
+supy ~/wax-iss/wax/melt_client.py set_motor_mode_st_time_based "$T13","$T2" # Mode 2: St-curve time-based
+sleep 1
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed "$rpm" # Ramp up motors
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 5}")
+sleep "$SLEEP_TIME" # Wait until ramped up, hold for 5 sec
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed 0 # Stop rotation
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 10}")
+sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 se
+
+# Speed = 100 RPM ------------------------------------------------------
+
+RPM=100
+
+# Individual time-based st-curve profiles
+
+# Profile B-1
+T13= 10.0
+T2=0.0
+echo "Profile B-1: T1=T3=$T13 s, T2=$T2 s"
+supy ~/wax-iss/wax/melt_client.py set_motor_mode_st_time_based "$T13","$T2" # Mode 2: St-curve time-based
+sleep 1
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed "$rpm" # Ramp up motors
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 5}")
+sleep "$SLEEP_TIME" # Wait until ramped up, hold for 5 sec
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed 0 # Stop rotation
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 10}")
+sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 sec
+
+
+# Profile B-2
+T13= 7.5
+T2=0.0
+echo "Profile B-2: T1=T3=$T13 s, T2=$T2 s"
+supy ~/wax-iss/wax/melt_client.py set_motor_mode_st_time_based "$T13","$T2" # Mode 2: St-curve time-based
+sleep 1
+sudo python ~/wax-iss/wax/melt_client.py set_target_load_speed "$rpm" # Ramp up motors
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 5}")
+sleep "$SLEEP_TIME" # Wait until ramped up, hold for 5 sec
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed 0 # Stop rotation
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 10}")
+sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 sec
+
+# Profile B-3
+T13= 5.0
+T2=0.0
+echo "Profile B-3: T1=T3=$T13 s, T2=$T2 s"
+supy ~/wax-iss/wax/melt_client.py set_motor_mode_st_time_based "$T13","$T2" # Mode 2: St-curve time-based
+sleep 1
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed "$rpm" # Ramp up motors
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 5}")
+sleep "$SLEEP_TIME" # Wait until ramped up, hold for 5 sec
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed 0 # Stop rotation
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 10}")
+sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 sec
+
+# Profile B-4
+T13=2.5
+T2=0.0
+echo "Profile B-3: T1=T3=$T13 s, T2=$T2 s"
+supy ~/wax-iss/wax/melt_client.py set_motor_mode_st_time_based "$T13","$T2" # Mode 2: St-curve time-based
+sleep 1
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed "$rpm" # Ramp up motors
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 5}")
+sleep "$SLEEP_TIME" # Wait until ramped up, hold for 5 sec
+supy ~/wax-iss/wax/melt_client.py set_target_load_speed 0 # Stop rotation
+SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 10}")
+sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 se
 
 
 # OLD: Constant accel ramp
