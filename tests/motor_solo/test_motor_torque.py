@@ -35,6 +35,9 @@ print("")
 #                          Inputs
 # ######################################################################
 
+# Target torque curret (A)
+target_torque_iq = 0.5
+
 
 #mode = 'ramp'
 mode = 'st_time-based'
@@ -43,8 +46,7 @@ mode = 'st_time-based'
 # Note: time-based curve is much smoother
 
 
-# Target torque curret (A)
-target_torque_iq = 0.5
+
 
 
 # Ramp mode: Motor Step Response settings
