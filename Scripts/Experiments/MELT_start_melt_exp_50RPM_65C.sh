@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-label="TMI_Tests_8Sept2026"
+label="TMI_Tests_16Sept2026"
 rpm=50
 setpoint=65
 sudo_pass="raspberry"
@@ -15,10 +15,13 @@ echo "Starting melting experiemnt"
 supy ~/wax-iss/wax/melt_client.py start_log_preview_exp $label,"Melt","$rpm","$setpoint" # Lights, camera, data log
 sleep 3
 
+# Reset motor current limit to 5A
+echo "Setting current limit to 5A"
+supy ~/wax-iss/wax/melt_client.py set_current_limit 5
+sleep 3
+
+
 # Ramp up motors -------------------------------------------------------------
-#echo "Ramping up motor"
-#supy ~/wax-iss/wax/melt_client.py set_target_load_speed "$rpm" # Ramp up motor
-#sleep 10
 
 # Ramp up motors. ST-curve profile
 T13=10
