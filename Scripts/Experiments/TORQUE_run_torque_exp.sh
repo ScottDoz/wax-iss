@@ -29,8 +29,7 @@ sleep 1
 
 # Set torque mode ---------------------------------------------------------
 
-
-
+supy ~/wax-iss/tests/motor_solo/test_motor_torque.py
 
 
 # Reset to speed mode ------------------------------------------------------

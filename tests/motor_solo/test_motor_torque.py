@@ -269,9 +269,13 @@ actualMotorSpeed, error = mySolo.get_speed_feedback()
 actualMotorIq, error = mySolo.get_quadrature_current_iq_feedback()
 print(f"time: {t:.2f} s. Motor Speed: {actualMotorSpeed} RPM. Shaft Speed: {actualMotorSpeed/gear_ratio:.2f} RPM. Measured Iq {actualMotorIq:.2f} [A]")
 print("End of test")
-print("Motion profile mode", mySolo.get_motion_profile_mode())
-print("Motion profile variable 1", mySolo.get_motion_profile_variable1())
-print("Motion profile variable 2", mySolo.get_motion_profile_variable2())
+
+
+# Reset speed mode
+print("Reset speed mode")
+mySolo.set_control_mode(solo.ControlMode.SPEED_MODE)
+time.sleep(1)
+
 
 # Close connection
 print("Closing solo connection")
