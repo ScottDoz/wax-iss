@@ -38,6 +38,7 @@ print("")
 # Target torque curret (A)
 target_torque_iq = 0.5
 
+target_speed_motor = 0.
 
 #mode = 'ramp'
 mode = 'st_time-based'
