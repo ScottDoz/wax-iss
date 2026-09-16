@@ -2,8 +2,8 @@
 
 # Variables
 label="TMI_Tests_16Sept2026"
-rpm=50
-setpoint=65
+rpm=0
+setpoint=50
 sudo_pass="raspberry"
 
 # Activate venv

@@ -3,8 +3,8 @@
 # Activate venv
 source ~/Documents/myenv/bin/activate
 
-echo "SOLO Set load speed 100 RPM"
-supy ~/wax-iss/wax/melt_client.py set_target_load_speed 50
+echo "Change Temp Setpoint"
+supy ~/wax-iss/wax/melt_client.py set_setpoint 65
 sleep 5 
 
 # Keep terminal open on error
