@@ -24,7 +24,7 @@ sleep 1
 
 # Speed = 50 RPM ------------------------------------------------------
 
-RPM=50
+rpm=50
 
 # Individual time-based st-curve profiles
 
@@ -83,7 +83,7 @@ sleep "$SLEEP_TIME" # Wait until ramped down, hold for 20 se
 
 # Speed = 100 RPM ------------------------------------------------------
 
-RPM=100
+rpm=100
 
 # Individual time-based st-curve profiles
 
