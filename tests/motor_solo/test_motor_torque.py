@@ -35,19 +35,12 @@ print("")
 #                          Inputs
 # ######################################################################
 
+# MIT lab plastic gear: Starting torque ~ 0.1 A.
+
 # Target torque curret (A)
-target_torque_iq = 2.
-
+target_torque_iq = 0.2
+startup_speed_motor = 1. # RPM
 target_speed_motor = 0.
-
-#mode = 'ramp'
-mode = 'st_time-based'
-#mode = 'st_time_optimal'
-
-# Note: time-based curve is much smoother
-
-
-
 
 
 # Ramp mode: Motor Step Response settings
@@ -120,11 +113,6 @@ mySolo.set_speed_deceleration_value(speedDecelValue)
 mySolo.set_speed_limit(speedLimit)
 
 
-# Set Torque Control mode
-mySolo.set_control_mode(solo.ControlMode.TORQUE_MODE)
-
-
-    
 
 
 # run the motor identification to Auto-tune the current controller gains Kp and Ki 
@@ -139,7 +127,7 @@ time.sleep(2)
 # Calibration
 mySolo.sensor_calibration(solo.PositionSensorCalibrationAction.INCREMENTAL_ENCODER_START_CALIBRATION)
 #print(input_valid,error) 
-time.sleep(10)
+time.sleep(2)
 mySolo.sensor_calibration(solo.PositionSensorCalibrationAction.STOP_CALIBRATION)
 mySolo.set_control_mode(solo.ControlMode.SPEED_MODE)
 print("ended calibration")
@@ -161,7 +149,6 @@ print("Motor resistance (Ohm)", mySolo.get_motor_resistance())
 print("Motor inductance (H)", mySolo.get_motor_inductance())
 print("Speed limit", mySolo.get_speed_limit())
 print("Communication is working", mySolo.communication_is_working())
-
 
 
 # ######################################################################
@@ -187,8 +174,33 @@ with open(motor_filename, mode='w', newline="") as file:
     writer = csv.writer(file, delimiter=',')
     writer.writerow(["time_s","load_speed","motor_speed","ref_motor_speed","iq","motor_torque","load_torque"])
     
+    # Startup in speed control mode ------------------------------------
+    # Need to start motor rotating in speed contorl mode
+    
+    print("Startup in speed control mode")
+    
+    # Start in speed mode
+    mySolo.set_control_mode(solo.ControlMode.SPEED_MODE)
+    time.sleep(0.1)
+    # Ramp up to startup speed
+    #mySolo.set_motor_direction(solo.Direction.CLOCKWISE)        # Clockwise
+    mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE) # Counter clockwise
+    mySolo.set_speed_reference(startup_speed_motor) #this is motor speed not shaft speed
+    time.sleep(1)
+    
+    # Set Torque Control mode
+    mySolo.set_control_mode(solo.ControlMode.TORQUE_MODE)
+    time.sleep(0.1)
+    # Set torque to zero to start
+    mySolo.set_torque_reference_iq(0)
+    time.sleep(1)
+    # Get values
+    motor_speed, error = mySolo.get_speed_feedback()
+    motor_Iq, error = mySolo.get_quadrature_current_iq_feedback()
+    print(f"Initial motor speed: {motor_speed} RPM. Torque Iq: {motor_Iq} [A]" )
     
     # RAMP UP ----------------------------------------------------------
+    T_ramp = 5 # Time to ramp (s)
     
     while True:
         # Get time
@@ -206,13 +218,14 @@ with open(motor_filename, mode='w', newline="") as file:
         # Get the current speed and torque
         motor_speed, error = mySolo.get_speed_feedback()
         motor_Iq, error = mySolo.get_quadrature_current_iq_feedback()
+        error_code, _ = mySolo.get_error_register()
         
         # Computations
         load_speed = motor_speed/gear_ratio # Load speed (RPM)
         motor_torque = motor_Iq*kt # Motor torque (N.m)
         load_torque = motor_torque*gear_ratio # Load torque (N.m)
         
-        print(f"time: {t:.2f} s. Motor Speed: {motor_speed} RPM. Shaft Speed: {motor_speed/gear_ratio:.2f} RPM. Measured Iq {motor_Iq:.2f} [A]")
+        print(f"time: {t:.2f} s. Motor Speed: {motor_speed} RPM. Shaft Speed: {motor_speed/gear_ratio:.2f} RPM. Measured Iq {motor_Iq:.2f} [A]. Error code {hex(error_code)}")
         
         # Write to file          
         writer.writerow([round(t,3), round(load_speed,3), round(motor_speed,3), round(target_speed_motor,3), round(motor_Iq,6), round(motor_torque,6), round(load_torque,6)])
@@ -221,17 +234,17 @@ with open(motor_filename, mode='w', newline="") as file:
         time.sleep(0.1)
         
         # Wait for 10 s before ramping down
-        if t>10:
+        if t>20:
             # End loop
             print('Timeout')
             break
 
     # Ramp down --------------------------------------------------------
-    time.sleep(2) # Wait 5 seconds to establish speed
+    time.sleep(0.1) # Wait 5 seconds to establish speed
 
     print("Ramping down to 0")
     #mySolo.set_motor_direction(solo.Direction.CLOCKWISE)
-    mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE)
+    #mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE)
     mySolo.set_torque_reference_iq(0)
 
     while True:
@@ -241,13 +254,14 @@ with open(motor_filename, mode='w', newline="") as file:
         # Get the current speed and torque
         motor_speed, error = mySolo.get_speed_feedback()
         motor_Iq, error = mySolo.get_quadrature_current_iq_feedback()
+        error_code, _ = mySolo.get_error_register()
         
         # Computations
         load_speed = motor_speed/gear_ratio # Load speed (RPM)
         motor_torque = motor_Iq*kt # Motor torque (N.m)
         load_torque = motor_torque*gear_ratio # Load torque (N.m)
         
-        print(f"time: {t:.2f} s. Motor Speed: {motor_speed} RPM. Shaft Speed: {motor_speed/gear_ratio:.2f} RPM. Measured Iq {motor_Iq:.2f} [A]")
+        print(f"time: {t:.2f} s. Motor Speed: {motor_speed} RPM. Shaft Speed: {motor_speed/gear_ratio:.2f} RPM. Measured Iq {motor_Iq:.2f} [A]. Error code {hex(error_code)}")
         
         # Write to file        
         writer.writerow([round(t,3), round(load_speed,3), round(motor_speed,3), round(target_speed_motor,3), round(motor_Iq,6), round(motor_torque,6), round(load_torque,6)])
@@ -259,7 +273,7 @@ with open(motor_filename, mode='w', newline="") as file:
         # ~ if error_code !=0:
             # ~ print(f"Error detected! Decimal Code: {error_code}")
         
-        if t>20:
+        if t>25:
             # End loop
             print('Timeout')
             break
@@ -278,9 +292,7 @@ mySolo.set_control_mode(solo.ControlMode.SPEED_MODE)
 time.sleep(1)
 
 
-# Close connection
-print("Closing solo connection")
-mySolo.serial_close()
+
 
 
 # ######################################################################
@@ -315,16 +327,11 @@ axs[0,0].set_ylabel("Speed (RPM)")
 axs[1,0].plot(dfm.time_s, dfm.motor_accel,'-k', label='Motor accel')
 axs[1,0].legend()
 axs[1,0].set_ylabel("Accel (RPM/s)")
-if mode == 'st_time_optimal':
-    axs[1,0].plot([time[0], time[-1]], [stCurve_maxAccel*60, stCurve_maxAccel*60] , '--r', label='Max accel')
-
 
 # Jerk
 axs[2,0].plot(dfm.time_s, dfm.motor_jerk,'-k', label='Motor jerk')
 axs[2,0].legend()
 axs[2,0].set_ylabel("Jerk (RPM/s/s)")
-if mode == 'st_time_optimal':
-    axs[2,0].plot([time[0], time[-1]], [stCurve_maxJerk*60, stCurve_maxJerk*60], '--r', label='Max jerk')
 
 
 # Torque
@@ -361,3 +368,6 @@ axs[3,1].set_xlabel("Time (s)")
 
 plt.show()
 
+# Close connection
+#print("Closing solo connection")
+#mySolo.serial_close()

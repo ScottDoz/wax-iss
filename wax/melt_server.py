@@ -1576,7 +1576,7 @@ def start_log_motor_client(client_socket):
 	global motor_file_path, stime, timestep_motor, exper_file
 	global motor_recording
 	# Global variables for telemetry
-	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq
+	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq, telem_motor_error_code
 	
 	# NOTE: only write motor parameters. Can re-construct load-side parameters in post processing
 	
@@ -1609,7 +1609,7 @@ def start_log_motor_client(client_socket):
 			
 			# Write header
 			#writer.writerow(["time_s","load_speed","motor_speed","ref_motor_speed","iq","motor_torque","load_torque"]) # Full log
-			writer.writerow(["time_s","motor_speed","ref_motor_speed","motor_iq"]) # Only motor parameters
+			writer.writerow(["time_s","motor_speed","ref_motor_speed","motor_iq","motor_error_code"]) # Only motor parameters
 		
 			# Time loop
 			while not stop_log_motor_event.is_set(): # while motor_recording:
@@ -1618,6 +1618,15 @@ def start_log_motor_client(client_socket):
 				motor_speed, error = mySolo.get_speed_feedback() # Speed of motor (RPM)
 				rpm_setpoint, error = mySolo.get_speed_reference() # Reference speed of motor (RPM)
 				motor_Iq, error = mySolo.get_quadrature_current_iq_feedback() # Motor quatrature current (A)
+				
+				# Get current error state as 8-bit binary integer
+				error_code, _ = mySolo.get_error_register()
+				if isinstance(error_code, int) and 0 <= error_code <= 0xFFFFFFFF:
+					error_binary = format(error_code & 0xFF, '08b')
+					error_hex = f"0x{error_code:08X}"
+				else:
+					error_binary = "INVALID"
+					error_hex = "INVALID"
 				
 				# Computations
 				load_speed = motor_speed/gear_ratio # Load speed (RPM)
@@ -1629,7 +1638,7 @@ def start_log_motor_client(client_socket):
 				
 				# Write to file
 				#writer.writerow([round(t,3), round(load_speed,3), round(motor_speed,3), round(rpm_setpoint,3), round(motor_Iq,6), round(motor_torque,6), round(load_torque,6)]) # Full log
-				writer.writerow([round(t,3), round(motor_speed,3), round(rpm_setpoint,3), round(motor_Iq,6)])
+				writer.writerow([round(t,3), round(motor_speed,3), round(rpm_setpoint,3), round(motor_Iq,6), error_binary])
 				file.flush()
 				
 				# Send telemetry every 5 seconds
@@ -1639,6 +1648,7 @@ def start_log_motor_client(client_socket):
 					telem_motor_motor_speed = motor_speed
 					telem_motor_rpm_setpoint = rpm_setpoint
 					telem_motor_motor_Iq = motor_Iq
+					telem_motor_error_code = error_binary
 					#print(f"T={t:.2f} sending motor telemetry")
 					
 					last_trigger += telem_interval # Increment last trigger time
@@ -1781,7 +1791,38 @@ def motor_ramp_updown_const_accel(client_socket, peak_rpm, t_start_delay=5., t_i
 	
 	return
 
+# Error diagnostics and clearing
 
+def get_motor_error_code(client_socket):
+	''' Get the motor error code '''
+	global mySolo
+	
+	# Get current error state as 8-bit binary integer
+	error_code, _ = mySolo.get_error_register()
+	if isinstance(error_code, int) and 0 <= error_code <= 0xFFFFFFFF:
+		error_binary = format(error_code & 0xFF, '08b')
+		error_hex = f"0x{error_code:08X}"
+	else:
+		error_binary = "INVALID"
+		error_hex = "INVALID"
+	
+	
+	logger.info(f"SOLO current error code")
+	logger.info(f"error_hex: {error_hex}")
+	logger.info(f"error_binary: {error_binary}")
+	
+	return
+
+def clear_motor_error_code(client_socket):
+	''' Clear the motor error code '''
+	global mySolo
+	
+	logger.info(f"SOLO clearing error register")
+	time.sleep(0.1)
+	success, _ = mySolo.overwrite_error_register()
+	time.sleep(1)
+
+	return
 
 # ######################################################################		
 # (OLD) Motor commands
@@ -1883,7 +1924,7 @@ def start_telemetry_client(client_socket):
 	global stime, ser_telem
 	
 	# Get access to global variables storing telemetry
-	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq # Motor
+	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq, telem_motor_error_code # Motor
 	global telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2 # Thermocouple
 	global telem_CAL_t, telem_CAL_temp, telem_CAL_setpoint
 	
@@ -1926,7 +1967,7 @@ def start_telemetry_client(client_socket):
 				
 				# Form dictionary
 				#telem_string = b'\"time_M\":98.3,\"name1\":98.3 ' # Test string from SpaceTango document
-				telem_string = (f'\"time_M\":{telem_motor_t:.2f},\"load_speed\":{load_speed:.2f},\"load_setpoint\":{load_setpoint:.2f},\"load_torque\":{load_torque:.2f},\"motor_iq\":{telem_motor_motor_Iq:.2f}'
+				telem_string = (f'\"time_M\":{telem_motor_t:.2f},\"load_speed\":{load_speed:.2f},\"load_setpoint\":{load_setpoint:.2f},\"load_torque\":{load_torque:.2f},\"motor_iq\":{telem_motor_motor_Iq:.2f},\"error_code\":{telem_motor_error_code}'
 								f',\"time_CAL\":{telem_CAL_t:.2f},\"CAL_temp\":{telem_CAL_temp:.2f},\"CAL_setpoint\":{telem_CAL_setpoint:.2f}'
 								f',\"time_THERMO\":{telem_thermo_t:.2f},\"THERMO_temp1\":{telem_thermo_temp1:.2f},\"THERMO_temp2\":{telem_thermo_temp2:.2f}'
 								f'\n'
@@ -1940,7 +1981,7 @@ def start_telemetry_client(client_socket):
 				
 				
 				logger.info(f"\nT={t:.2f} sending telemetry!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-				logger.info(f"Motor Telemetry:  t={telem_motor_t:.2f}, load_speed={telem_motor_motor_speed/gear_ratio:.2f}")
+				logger.info(f"Motor Telemetry:  t={telem_motor_t:.2f}, load_speed={telem_motor_motor_speed/gear_ratio:.2f}, error_code={telem_motor_error_code}")
 				logger.info(f"CAL Telemetry:    t={telem_CAL_t:.2f}, temp={telem_CAL_temp:.2f}, setpoint={telem_CAL_setpoint:.2f}")
 				logger.info(f"Thermo Telemetry: t={telem_thermo_t:.2f}, temp1={telem_thermo_temp1:.2f}, temp2={telem_thermo_temp2:.2f}")
 				logger.info("telemetry_string:")
@@ -2384,8 +2425,7 @@ def handle_client_connection(client_socket):
 				# TODO: parse optional parameters
 				motor_ramp_updown_const_accel(client_socket, peak_rpm, t_start_delay=5., t_idle=20., t_stop_delay=20.)
 				break
-			
-			
+
 				
 			# Logging commands
 			elif data == "start_log_data":
@@ -2416,9 +2456,13 @@ def handle_client_connection(client_socket):
 				stop_log_exp(client_socket)
 				break
 			
-			
-			
-			
+			# Error codes
+			elif data == "get_motor_error_code":
+				get_motor_error_code(client_socket)
+				break
+			elif data == "clear_motor_error_code":
+				clear_motor_error_code(client_socket)
+				break
 				
 			# FIXME: (OLD) Motor commands ------------------------------
 			elif data.startswith("change rpm setpoint"):
@@ -2484,10 +2528,10 @@ def melt_server_program():
 	
 	
 	# Telemetry variables
-	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq # Motor
+	global telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq, telem_motor_error_code # Motor
 	global telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2 # Thermocouple
 	global telem_CAL_t, telem_CAL_temp, telem_CAL_setpoint # CAL controller
-	telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq = 0,0,0,0
+	telem_motor_t, telem_motor_motor_speed, telem_motor_rpm_setpoint, telem_motor_motor_Iq, telem_motor_error_code = 0,0,0,0, ""
 	telem_thermo_t, telem_thermo_temp1, telem_thermo_temp2 = 0,0,0
 	telem_CAL_t, telem_CAL_temp, telem_CAL_setpoint = 0,0,0
 	
