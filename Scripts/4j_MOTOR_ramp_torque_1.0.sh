@@ -3,7 +3,7 @@
 # Activate venv
 source ~/Documents/myenv/bin/activate
 
-echo "Ramping torque Iq: 0.2A in 5 s"
+echo "Ramping torque Iq: 1.0A in 5 s"
 supy ~/wax-iss/wax/melt_client.py ramp_torque_reference_iq 1.0, 5
 sleep 5 
 
