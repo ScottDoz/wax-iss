@@ -1239,6 +1239,35 @@ def get_solo_settings_client(client_socket):
 
 	return
 
+def set_motor_direction_clockwise(client_socket):
+	''' Set solo motor direction clockwise '''
+	
+	try:
+
+		mySolo.set_motor_direction(solo.Direction.CLOCKWISE)        # Clockwise
+		time.sleep(0.1)
+		
+		logger.info(f"Motor direction {mySolo.get_motor_direction()}")
+
+	except Exception as e:
+		logger.info("Error in resetting SOLO motor direction: {}".format(e))
+
+	return
+
+def set_motor_direction_counterclockwise(client_socket):
+	''' Set solo motor direction counterclockwise '''
+	
+	try:
+
+		mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE) # Counter clockwise
+		time.sleep(0.1)
+		
+		logger.info(f"Motor direction {mySolo.get_motor_direction()}")
+
+	except Exception as e:
+		logger.info("Error in resetting SOLO motor direction: {}".format(e))
+
+	return
 
 # TORQUE Control -------------------------------------------------------
 
@@ -2485,6 +2514,13 @@ def handle_client_connection(client_socket):
 				break
 			elif data.startswith("get_solo_settings"):
 				get_solo_settings_client(client_socket)
+				break
+			
+			elif data.startswith("set_motor_direction_clockwise"):
+				set_motor_direction_clockwise(client_socket)
+				break
+			elif data.startswith("set_motor_direction_counterclockwise"):
+				set_motor_direction_counterclockwise(client_socket)
 				break
 			
 			# Torque control
