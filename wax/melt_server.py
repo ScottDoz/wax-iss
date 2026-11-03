@@ -990,6 +990,7 @@ def stop_log_CAL(client_socket):
 # Motor commands (SOLO)
 # ######################################################################
 
+# Instantiation --------------------------------------------------------
 def instantiate_solo_client(client_socket): 
 	''' Instantiate solo handle '''
 	global mySolo, SOLO_port
@@ -1089,7 +1090,6 @@ def reset_solo_settings_client(client_socket):
 		print("Motor speed limit (RPM)", rpm_limit)
 		
 		client_socket.sendall(b"SOLO parameters set\n")
-
 		
 	except Exception as e:
 		client_socket.sendall(f"Error in reseting SOLO settings: {str(e)}\n".encode('utf-8'))
@@ -1151,7 +1151,6 @@ def reset_solo_settings():
 		# Motor direction
 		mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE) # CCW = +ve
 		logger.info(f"Motor direction {mySolo.get_motor_direction()}")
-		
 		
 		# Other	
 		logger.info(f"encoder_hall_ccw_offset {mySolo.get_encoder_hall_ccw_offset()}")
@@ -1239,8 +1238,137 @@ def get_solo_settings_client(client_socket):
 		client_socket.sendall(f"Error in reading SOLO settings: {str(e)}\n".encode('utf-8'))
 
 	return
+
+
+# TORQUE Control -------------------------------------------------------
+
+def set_motor_mode_torque(client_socket): 
+	''' 
+	Set motor controller to torque mode.
 	
-# Change motion profile mode
+	NOTE: Need to start motor in speed mode first.
+	'''
+	global mySolo
+	
+	logger.info(f"Motor Torque control mode.")
+	
+	# Start in speed mode
+	logger.info(f"Start up in speed control mode.")
+	startup_speed_motor = 1 # RPM. Startup
+	mySolo.set_control_mode(solo.ControlMode.SPEED_MODE)
+	time.sleep(0.1)
+	# Ramp up to startup speed
+	#mySolo.set_motor_direction(solo.Direction.CLOCKWISE)        # Clockwise
+	mySolo.set_motor_direction(solo.Direction.COUNTERCLOCKWISE) # Counter clockwise
+	logger.info(f"Ramping motor to {startup_speed_motor} RPM.")
+	mySolo.set_speed_reference(startup_speed_motor) #this is motor speed not shaft speed
+	time.sleep(1)
+    
+	# Set Torque Control mode
+	logger.info(f"Setting torque mode. Torque reference Iq: 0 A")
+	mySolo.set_control_mode(solo.ControlMode.TORQUE_MODE)
+	time.sleep(0.1)
+	# Set torque to zero to start
+	mySolo.set_torque_reference_iq(0)
+	time.sleep(1)
+	# Get values
+	motor_speed, error = mySolo.get_speed_feedback()
+	motor_Iq, error = mySolo.get_quadrature_current_iq_feedback()
+	logger.info(f"Initial motor speed: {motor_speed} RPM. Torque Iq: {motor_Iq} [A]" )
+
+	return
+	
+def get_torque_reference_iq(client_socket): 
+	''' 
+	Get current motor torque reference Iq.
+	'''
+	global mySolo
+
+	# Get the torque value
+	Iq0, _ = mySolo.get_torque_reference_iq() # Current torque reference Iq [A] 
+	time.sleep(0.01)
+	logger.info(f"\nCurrent torque reference Iq: {Iq0} A")
+	
+	if Iq0 == -1.:
+		logger.info(f"\Warning: Iq = -1. Check motor status. Run Motor instantiation again.")
+	
+	return
+
+def set_torque_reference_iq(client_socket,Iq): 
+	''' 
+	Set motor torque reference Iq.
+	Acts immediately.
+	'''
+	global mySolo
+
+	# Error check
+
+	# Current limit max
+	if Iq >= 5.5 :
+		logger.info(f"\nRequested current Iq limit too high. Set value <= 5.5 A")
+		return
+
+	# Set the torque value
+	mySolo.set_torque_reference_iq(Iq)
+	logger.info(f"Torque reference Iq = {Iq} A")
+	
+	return
+	
+def ramp_torque_reference_iq(client_socket, Iq, T_ramp): 
+	''' 
+	Ramp the motor torque to reference Iq over a set time.
+	'''
+	global mySolo
+	
+	# Get start time and torque reference
+	t0 = time.time()
+	Iq0, _ = mySolo.get_torque_reference_iq() # Current torque reference Iq [A] 
+	time.sleep(0.05)
+	logger.info(f"\nCurrent torque reference Iq: {Iq0} A")
+	
+	if Iq0 == -1.:
+		logger.info(f"\Warning: Iq = -1. Check motor status. Run Motor instantiation again."")
+	
+	# Ramp rate (A/s)
+	ramp_rate = (Iq - Iq0)/T_ramp # A/s
+	
+	# Ramp up
+	logger.info(f"Ramping torque to {Iq} A in {T_ramp} s")
+	while True:
+		# Get time
+		t = time.time() - t0 # Loop time
+		
+		# Interpolate ramp current
+		Iqt = Iq0 + ramp_rate*t
+		
+		# Set the current reference Iq
+		mySolo.set_torque_reference_iq(Iqt)
+		time.sleep(0.01)
+		
+		# Get the current speed and torque
+		actualMotorTorque, error = mySolo.get_torque_reference_iq()
+		#print("time: " + str(t) + "s. " + "Motor Speed: " + str(actualMotorSpeed) + " RPM. " + "Measured Iq/Torque[A]: " + str(actualMotorTorque))
+		time.sleep(0.01)
+		
+		if abs(actualMotorTorque - Iq) <= 0.01:
+			# Achieved target speed. End loop
+			mySolo.set_torque_reference_iq(Iq)
+			time.sleep(0.01)
+			print("Achieved target speed")
+			break
+		
+		# Timeout
+		if t>T_ramp:
+			# End loop
+			mySolo.set_torque_reference_iq(Iq)
+			time.sleep(0.01)
+			break
+	
+	return
+
+
+
+# SPEED Mode Change motion profile mode --------------------------------
 
 def set_motor_mode_ramp(client_socket):
 	'''
@@ -1364,7 +1492,8 @@ def set_motor_mode_st_time_optimal(client_socket,stCurve_maxAccel,stCurve_maxJer
 
 	return
 	
-	
+# SPEED control --------------------------------------------------------
+
 # TODO: add setters for individual motor settings
 
 def set_solo_accel_client(client_socket,val): 
@@ -1524,6 +1653,7 @@ def set_current_limit_client(client_socket, current_limit):
 	return
 
 
+# Data monitoring and logging ------------------------------------------
 	
 def spy_motor_speed_data(client_socket):
 	''' Print motor speed data to screen '''
@@ -1698,6 +1828,7 @@ def set_motor_timestep(dt):
 	except Exception as e:
 		print("Error in updating timestep: " + e)
 
+# Full motion profiles -------------------------------------------------
 
 def motor_ramp_updown_const_accel(client_socket, peak_rpm, t_start_delay=5., t_idle=20., t_stop_delay=20.):
 	''' 
@@ -1791,7 +1922,8 @@ def motor_ramp_updown_const_accel(client_socket, peak_rpm, t_start_delay=5., t_i
 	
 	return
 
-# Error diagnostics and clearing
+
+# Error diagnostics and clearing ---------------------------------------
 
 def get_motor_error_code(client_socket):
 	''' Get the motor error code '''
@@ -2355,6 +2487,25 @@ def handle_client_connection(client_socket):
 				get_solo_settings_client(client_socket)
 				break
 			
+			# Torque control
+			elif data == "set_motor_mode_torque":
+				set_motor_mode_torque(client_socket)
+				break
+			elif data == "get_torque_reference_iq":
+				get_torque_reference_iq(client_socket)
+				break
+			elif data.startswith("set_torque_reference_iq"):
+				Iq = data[23:]
+				set_torque_reference_iq(client_socket,float(Iq))
+				break
+			elif data.startswith("ramp_torque_reference_iq"):
+				data_list = data[24:].split(",") # Iq, T_ramp
+				Iq = float(data_list[0])
+				T_ramp = float(data_list[1])
+				ramp_torque_reference_iq(client_socket, float(Iq), float(T_ramp))
+				break
+			
+			# Speed control
 			elif data.startswith("set_motor_mode_ramp"):
 				set_motor_mode_ramp(client_socket)
 				break
