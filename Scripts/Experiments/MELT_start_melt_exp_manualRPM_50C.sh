@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-label="TMI_Tests_16Sept2026"
+label="TMI_Tests_3Nov2026"
 rpm=0
 setpoint=50
 sudo_pass="raspberry"
@@ -34,7 +34,6 @@ SLEEP_TIME=$(awk "BEGIN {print 2 * $T13 + $T2 + 5}")
 sleep "$SLEEP_TIME" # Wait until ramped up, hold for 5 sec
 
 # Turn on heater -----------------------------------------------------------------
-sleep 30 # Wait for motors to even out
 echo "Enabling heaters."
 supy ~/wax-iss/wax/melt_client.py set_setpoint "$setpoint" # Change CAL temperature setpoint
 sleep 1

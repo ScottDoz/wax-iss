@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 # Base directory
-label = "TMI_Tests"
+label = "TMI_Tests_3Nov2026" #"TMI_Tests"
 prefix = "Melt"
 
 session_file_path = "/home/pi/Data/" + label
