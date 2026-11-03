@@ -1327,7 +1327,7 @@ def ramp_torque_reference_iq(client_socket, Iq, T_ramp):
 	logger.info(f"\nCurrent torque reference Iq: {Iq0} A")
 	
 	if Iq0 == -1.:
-		logger.info(f"\Warning: Iq = -1. Check motor status. Run Motor instantiation again."")
+		logger.info(f"\Warning: Iq = -1. Check motor status. Run Motor instantiation again.")
 	
 	# Ramp rate (A/s)
 	ramp_rate = (Iq - Iq0)/T_ramp # A/s
